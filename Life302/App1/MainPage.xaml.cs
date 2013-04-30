@@ -120,42 +120,12 @@ namespace Life302
                     drosophilaInteractionsOrthologMapped.IntersectWith(humanInteractions);
                     orthologsRValueList.Add(
                         (UInt16)(drosophilaPpi.Value.Count + humanInteractions.Count - drosophilaInteractionsOrthologMapped.Count * 2), drosophilaPpi.Key);
-
-                    //drosophila의 ortholog만 매핑한 뒤 (orthologsFiltered로 매핑 안 되는 건 specific) 매핑된 리스트와 휴먼 interaction간 겹치는 것 조사 - intersect?
-                    
-
-                    //foreach (String mappedPpi in drosophilaInteractionsOrthologMapped)
-                    //{
-                    //    if (!humanInteractions.Contains(mappedPpi))
-                    //        RValue++;
-                    //}
                 }
                 else // drosophila specific
                     drosophilaSpecificRValueList.Add((UInt16)drosophilaPpi.Value.Count, drosophilaPpi.Key);
-                //UInt16 rValue = 0;
-                //foreach (String ppiItem in drosophilaPpi.Value)
-                //    if (!orthologsFilteredHumanDrosophila.ContainsValue(ppiItem))
-                //        rValue++;
-
-                //if (orthologsFilteredHumanDrosophila.ContainsValue(drosophilaPpi.Key))
-                //    orthologsRValuePre.Add(drosophilaPpi.Key, rValue);
-                //else
-                //    drosophilaSpecificRValueList.Add(rValue, drosophilaPpi.Key);
             }
-            //foreach (KeyValuePair<String, SortedSet<String>> humanPpi in human)
-            //{
-            //    UInt16 rValue = 0;
-            //    foreach (String ppiItem in humanPpi.Value)
-            //        if (!orthologsFilteredHumanDrosophila.ContainsKey(ppiItem))
-            //            rValue++;
-
-            //    if (orthologsFilteredHumanDrosophila.ContainsKey(humanPpi.Key))
-            //        orthologsRValuePre[orthologsFilteredHumanDrosophila[humanPpi.Key]] += rValue;
-            //    else
-            //        humanSpecificRValueList.Add(rValue, humanPpi.Key);
-            //}
-            //foreach (KeyValuePair<String, UInt16> pair in orthologsRValuePre)
-            //    orthologsRValueList.Add(pair.Value, pair.Key);
+            foreach (String humanRemainingGene in humanRemainingGenes)
+                humanSpecificRValueList.Add((UInt16)human[humanRemainingGene].Count, humanRemainingGene);
 
             return new SortedDictionary<UInt16, SortedSet<String>>[]
                 { 
@@ -596,6 +566,7 @@ namespace Life302
             if (!dictionary.TryGetValue(level, out levelset))
                 levelset = dictionary[level] = new SortedSet<T2>();
             levelset.Add(item);
+            listedItemCount++;
         }
     }
 }
