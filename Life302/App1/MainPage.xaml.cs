@@ -58,19 +58,18 @@ namespace Life302
             //var ortholog = await readDrosophilaToHumanOrtholog();
 
             await saveRValue();
-
-            //await saveValidOrtholog();
         }
 
-        async Task<SortedDictionary<String, String>> readValidOrtholog(SortedDictionary<String, SortedSet<String>> drosophila, SortedDictionary<String, SortedSet<String>> human)
+        async Task<SortedDictionary<UInt16, SortedSet<String>>[]> readRValue()
         {
             var mapped = await readMappedOrtholog();
+            var drosophila = await readDrosophilaNetwork();
+            var human = await readHumanNetwork();
+
             var orthologsFilteredDrosophilaHuman = new Dictionary<String, String>();
+            var orthologsFilteredHumanDrosophila = new Dictionary<String, String>();
             var orthologsAmbiguous = new Dictionary<String, SortedSet<String>>();
 
-            //r값 변화가 가장 적은 쪽이 저 망할 Ortholog로 매핑된 여러 가지들 중 진짜 Ortholog일 것
-
-            System.Diagnostics.Debug.WriteLine("Started filtering ortholog data");
             var drosophilaGenes = drosophila.Keys;
 
             foreach (String drosophilaGene in drosophilaGenes)
@@ -87,53 +86,16 @@ namespace Life302
                     if (checkedOrthologs.Count == 1)
                     {
                         orthologsFilteredDrosophilaHuman.Add(drosophilaGene, checkedOrthologs.First());
+                        orthologsFilteredHumanDrosophila.Add(checkedOrthologs.First(), drosophilaGene);
                     }
                     else if (checkedOrthologs.Count > 1)
                         orthologsAmbiguous.Add(drosophilaGene, checkedOrthologs);
                 }
             }
 
-            return new SortedDictionary<String, String>(orthologsFilteredDrosophilaHuman);
-        }
-
-        async Task saveValidOrtholog()
-        {
-            var drosophila = await readDrosophilaNetwork();
-            var human = await readHumanNetwork();
-            var ortholog = await readValidOrtholog(drosophila, human);
-
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "ValidOrtholog";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
-            {
-                await NetworkDataProcessor.saveStringDictionary(savefile, "Protein", "Otholog protein", ortholog);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
-        }
-
-        async Task<SortedDictionary<UInt16, SortedSet<String>>[]> readRValue()
-        {
-            System.Diagnostics.Debug.WriteLine("Started reading drosophila network");
-            var drosophila = await readDrosophilaNetwork();
-            System.Diagnostics.Debug.WriteLine("Started reading human network");
-            var human = await readHumanNetwork();
-
-            var orthologsFilteredDrosophilaHuman = await readValidOrtholog(drosophila, human);
-
-            System.Diagnostics.Debug.WriteLine("Started calculating r values");
-            //ortholog gene network를 만들어 이를 중앙으로 해서 drosophila/human gene network를 각 gene에 붙여서 
-            //추가된 수를 비교?
             var humanRemainingGenes = human.Keys.ToList();
 
             var orthologsRValueList = new AutoLister<UInt16, String>();
-            var orthologsRValueListHuman = new AutoLister<UInt16, String>();
             var drosophilaSpecificRValueList = new AutoLister<UInt16, String>();
             var humanSpecificRValueList = new AutoLister<UInt16, String>();
 
@@ -152,11 +114,8 @@ namespace Life302
                             drosophilaInteractionsOrthologMapped.Add(mappedInteraction);
                     }
                     drosophilaInteractionsOrthologMapped.IntersectWith(humanInteractions);
-
                     orthologsRValueList.Add(
                         (UInt16)(drosophilaPpi.Value.Count + humanInteractions.Count - drosophilaInteractionsOrthologMapped.Count * 2), drosophilaPpi.Key);
-                    orthologsRValueListHuman.Add(
-                        (UInt16)(drosophilaPpi.Value.Count + humanInteractions.Count - drosophilaInteractionsOrthologMapped.Count * 2), humanOrtholog);
                 }
                 else // drosophila specific
                     drosophilaSpecificRValueList.Add((UInt16)drosophilaPpi.Value.Count, drosophilaPpi.Key);
@@ -166,10 +125,9 @@ namespace Life302
 
             return new SortedDictionary<UInt16, SortedSet<String>>[]
                 { 
-                    orthologsRValueList.GetSortedDictionary(),
-                    orthologsRValueListHuman.GetSortedDictionary(),
+                    orthologsRValueList.GetSortedDictionary(), 
                     drosophilaSpecificRValueList.GetSortedDictionary(), 
-                    humanSpecificRValueList.GetSortedDictionary()
+                    humanSpecificRValueList.GetSortedDictionary() 
                 };
         }
 
@@ -181,28 +139,11 @@ namespace Life302
                 FileSavePicker picker = new FileSavePicker();
                 picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
                 picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologDrosophilaIdRValue";
+                picker.SuggestedFileName = "OrthologRValue";
                 StorageFile savefile = await picker.PickSaveFileAsync();
                 if (savefile != null)
                 {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Orthologs by Drosophila Gene ID", rvalues[0]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
-            {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologHumanIdRValue";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Orthologs by Human Gene ID", rvalues[1]);
+                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "Orthologs by Drosophila Gene ID", "r value", rvalues[0]);
                     await new MessageDialog("Completed").ShowAsync();
                 }
                 else
@@ -219,7 +160,7 @@ namespace Life302
                 StorageFile savefile = await picker.PickSaveFileAsync();
                 if (savefile != null)
                 {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Drosophila Specific Genes", rvalues[2]);
+                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "Drosophila Specific Genes", "r value", rvalues[1]);
                     await new MessageDialog("Completed").ShowAsync();
                 }
                 else
@@ -236,80 +177,7 @@ namespace Life302
                 StorageFile savefile = await picker.PickSaveFileAsync();
                 if (savefile != null)
                 {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Human Specific Proteins", rvalues[3]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-        }
-
-        async Task saveRValueSpread()
-        {
-            var rvalues = await readRValue();
-
-            {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologDrosophilaIdRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Orthologs by Drosophila Gene ID", rvalues[0]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
-            {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologHumanIdRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Orthologs by Human Gene ID", rvalues[1]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
-            {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "DrosophilaRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Drosophila Specific Genes", rvalues[2]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
-            {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "HumanRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Human Specific Proteins", rvalues[3]);
+                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "Human Specific Proteins", "r value", rvalues[2]);
                     await new MessageDialog("Completed").ShowAsync();
                 }
                 else
@@ -394,7 +262,7 @@ namespace Life302
 
         async Task saveHumanNetwork()
         {
-            var network = await readHumanNetwork();
+            var network = await readHumanNetwork();         
 
             FileSavePicker picker = new FileSavePicker();
             picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
@@ -664,22 +532,6 @@ namespace Life302
                 }
             }
         }
-
-        public async static Task saveStringSetDictionarySpread<T1>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, SortedSet<String>> dictionary)
-        {
-            using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
-            {
-                using (var writer = new DataWriter(stream))
-                {
-                    writer.WriteString(
-                        String.Format("{0},{1}\n", firstColumnName, secondColumnName));
-                    foreach (KeyValuePair<T1, SortedSet<String>> pair in dictionary)
-                        foreach (String secondItem in pair.Value)
-                            writer.WriteString(String.Format("{0},{1}\n", pair.Key, secondItem));
-                    await writer.StoreAsync();
-                }
-            }
-        }
     }
 
     public class AutoLister<T1, T2>
@@ -701,7 +553,7 @@ namespace Life302
 
         public SortedDictionary<T1, SortedSet<T2>> GetSortedDictionary()
         {
-            return new SortedDictionary<T1, SortedSet<T2>>(dictionary);
+            return new SortedDictionary<T1,SortedSet<T2>>(dictionary);
         }
 
         public void Add(T1 level, T2 item)
