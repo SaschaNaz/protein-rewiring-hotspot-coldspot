@@ -121,8 +121,6 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="App1_TemporaryKey.pfx" />
-    <Content Include="Mapper\HumanEnsembleToGenename.txt" />
-    <Content Include="Mapper\HumanEnsembleProteinIDToNCBIProteinID.txt" />
     <Content Include="Mapper\HUMAN_9606_idmapping.txt" />
   </ItemGroup>
   <ItemGroup>
