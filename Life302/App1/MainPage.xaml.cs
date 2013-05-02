@@ -21,17 +21,12 @@ using System.Xml.Linq;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
-/*
- * ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/RefSeqGene/
- * http://www.genenames.org/cgi-bin/hgnc_downloads
- * http://asia.ensembl.org/biomart/martview
- * 
- * HPRD에서 사용가능한 데이터는 RefSeq protein(NP) ID 뿐
- * HGNC에서는 RefSeq NM ID와 앙상블 ID의 매핑을 제공
- * 앙상블은 RefSeq NM ID와 매핑을 제공은 하나 빠져있는 데이터가 많아 완전하지 못함
- * RefSeq가 RefSeq NM ID와 NP ID를 매핑해주지만 없는 gene이 있다
- * 
- * HGNC gene name 데이터도 HPRD가 제공하지만 같은 이름의 다른 gene을 가리킬 수 있어 사용 불가능
+/* 각 코드를 만들면 한번 쓰고 버리는 지금 방식에서
+ * 어떤 작업을 하면 거기에 필요한 구성 성분을 각각 생성하고선 이를 전역 변수로 저장하고, 그 여부를 UI로 알 수 있도록 한다
+ * 매번 다시 연산하지 않고 전역 변수에 저장된 걸 사용
+ * 필요한 게 없으면 생성한다
+ * 불러오는 함수를 만들자, 없으면 만들어서 저장한 뒤 리턴하고 있으면 그대로 리턴하는 함수 - 최대한 코드를 기존 그대로 쓸 수 있게끔
+ * UI에서 파일저장 작업 자유롭게 할 수 있도록 만들기
  */
 
 namespace Life302
@@ -53,11 +48,11 @@ namespace Life302
             //await saveDrosophilaToHumanOrtholog();
             //await saveMappedOrtholog();
             //await saveUniprotMapper();
-            //await saveHumanNetwork();
+            await saveHumanNetwork();
 
             //var ortholog = await readDrosophilaToHumanOrtholog();
 
-            await saveRValue();
+            //await saveRValue();
 
             //await saveValidOrtholog();
         }
@@ -100,20 +95,10 @@ namespace Life302
             var human = await readHumanNetwork();
             var ortholog = await readValidOrtholog(drosophila, human);
 
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "ValidOrtholog";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
                 await NetworkDataProcessor.saveStringDictionary(savefile, "Protein", "Otholog protein", ortholog);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
+            }, "ValidOrtholog");
         }
 
         async Task<SortedDictionary<UInt16, SortedSet<String>>[]> readRValue()
@@ -174,72 +159,44 @@ namespace Life302
         {
             var rvalues = await readRValue();
 
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologDrosophilaIdRValue";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Orthologs by Drosophila Gene ID", rvalues[0]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
+                await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Orthologs by Drosophila Gene ID", rvalues[0]);
+            }, "OrthologDrosophilaIdRValue");
+            await CsvFileSave(async delegate(StorageFile savefile)
+            {
+                await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Orthologs by Human Gene ID", rvalues[1]);
+            }, "OrthologHumanIdRValue");
+            await CsvFileSave(async delegate(StorageFile savefile)
+            {
+                await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Drosophila Specific Genes", rvalues[2]);
+            }, "DrosophilaRValue");
+            await CsvFileSave(async delegate(StorageFile savefile)
+            {
+                await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Human Specific Proteins", rvalues[3]);
+            }, "HumanRValue");
+        }
 
-            {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologHumanIdRValue";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Orthologs by Human Gene ID", rvalues[1]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
+        async Task CsvFileSave(Action<StorageFile> action, String filename)
+        {
+            await basicFileSave(action, filename, "CSV Spreadsheet format", ".csv");
+        }
 
+        async Task basicFileSave(Action<StorageFile> action, String filename, String filetypeExplanation, String filetype)
+        {
+            FileSavePicker picker = new FileSavePicker();
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            picker.FileTypeChoices.Add(filetypeExplanation, new List<String> { filetype });
+            picker.SuggestedFileName = filename;
+            StorageFile savefile = await picker.PickSaveFileAsync();
+            if (savefile != null)
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "DrosophilaRValue";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Drosophila Specific Genes", rvalues[2]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
+                action(savefile);
+                await new MessageDialog("Completed").ShowAsync();
             }
-
+            else
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "HumanRValue";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionary(savefile, "r value", "Human Specific Proteins", rvalues[3]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
+                await new MessageDialog("Canceled").ShowAsync();
             }
         }
 
@@ -247,73 +204,22 @@ namespace Life302
         {
             var rvalues = await readRValue();
 
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologDrosophilaIdRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Orthologs by Drosophila Gene ID", rvalues[0]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
+                await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Orthologs by Drosophila Gene ID", rvalues[0]);
+            }, "OrthologDrosophilaIdRValueSpread");
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "OrthologHumanIdRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Orthologs by Human Gene ID", rvalues[1]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
+                await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Orthologs by Human Gene ID", rvalues[1]);
+            }, "OrthologHumanIdRValueSpread");
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "DrosophilaRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Drosophila Specific Genes", rvalues[2]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
-
+                await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Drosophila Specific Genes", rvalues[2]);
+            }, "DrosophilaRValueSpread");
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
-                FileSavePicker picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-                picker.SuggestedFileName = "HumanRValueSpread";
-                StorageFile savefile = await picker.PickSaveFileAsync();
-                if (savefile != null)
-                {
-                    await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Human Specific Proteins", rvalues[3]);
-                    await new MessageDialog("Completed").ShowAsync();
-                }
-                else
-                {
-                    await new MessageDialog("Canceled").ShowAsync();
-                }
-            }
+                await NetworkDataProcessor.saveStringSetDictionarySpread(savefile, "r value", "Human Specific Proteins", rvalues[3]);
+            }, "HumanRValueSpread");
         }
 
         async Task<SortedDictionary<String, SortedSet<String>>> readMappedOrtholog()
@@ -339,20 +245,10 @@ namespace Life302
         {
             var mapped = await readMappedOrtholog();
 
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "MappedOrtholog";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
                 await NetworkDataProcessor.saveStringSetDictionary(savefile, "Drosophila Protein", "Human Ortholog Proteins", mapped);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
+            }, "MappedOrtholog");
         }
 
         async Task<SortedDictionary<String, SortedSet<String>>> readDrosophilaNetwork()
@@ -366,20 +262,10 @@ namespace Life302
         {
             var network = await readDrosophilaNetwork();
 
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "DrosophilaNetwork";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
                 await NetworkDataProcessor.saveStringSetDictionary(savefile, "Drosophila Protein", "Human Ortholog Protein", network);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
+            }, "DrosophilaNetwork");
         }
 
         async Task<SortedDictionary<String, SortedSet<String>>> readHumanNetwork()
@@ -393,20 +279,10 @@ namespace Life302
         {
             var network = await readHumanNetwork();
 
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "HumanNetwork";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
+            await CsvFileSave(async delegate (StorageFile savefile)
             {
                 await NetworkDataProcessor.saveStringSetDictionary(savefile, "Protein", "Protein Interaction List", network);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
+            }, "HumanNetwork");
         }
 
         async Task<SortedDictionary<String, SortedSet<String>>> readUniprotMapper()
@@ -420,20 +296,10 @@ namespace Life302
         {
             var mapper = await readUniprotMapper();
 
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "UniprotMapper";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
                 await NetworkDataProcessor.saveStringSetDictionary(savefile, "Ensembl Protein", "RefSeq Proteins", mapper);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
+            }, "UniprotMapper");
         }
 
         async Task<SortedDictionary<String, String>> readDrosophilaToHumanOrtholog()
@@ -447,20 +313,10 @@ namespace Life302
         {
             var ortholog = await readDrosophilaToHumanOrtholog();
 
-            FileSavePicker picker = new FileSavePicker();
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("CSV Spreadsheet format", new List<String> { ".csv" });
-            picker.SuggestedFileName = "DrosophilaToHumanOrtholog";
-            StorageFile savefile = await picker.PickSaveFileAsync();
-            if (savefile != null)
+            await CsvFileSave(async delegate(StorageFile savefile)
             {
                 await NetworkDataProcessor.saveStringDictionary(savefile, "Gene Name", "Ortholog Gene Name", ortholog);
-                await new MessageDialog("Completed").ShowAsync();
-            }
-            else
-            {
-                await new MessageDialog("Canceled").ShowAsync();
-            }
+            }, "DrosophilaToHumanOrtholog");
         }
 
         /// <summary>
