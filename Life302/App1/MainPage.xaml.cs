@@ -68,8 +68,6 @@ namespace Life302
             var orthologsFilteredDrosophilaHuman = new Dictionary<String, String>();
             var orthologsAmbiguous = new Dictionary<String, SortedSet<String>>();
 
-            //r값 변화가 가장 적은 쪽이 저 망할 Ortholog로 매핑된 여러 가지들 중 진짜 Ortholog일 것
-
             System.Diagnostics.Debug.WriteLine("Started filtering ortholog data");
             var drosophilaGenes = drosophila.Keys;
 
@@ -128,8 +126,7 @@ namespace Life302
             var orthologsFilteredDrosophilaHuman = await readValidOrtholog(drosophila, human);
 
             System.Diagnostics.Debug.WriteLine("Started calculating r values");
-            //ortholog gene network를 만들어 이를 중앙으로 해서 drosophila/human gene network를 각 gene에 붙여서 
-            //추가된 수를 비교?
+
             var humanRemainingGenes = human.Keys.ToList();
 
             var orthologsRValueList = new AutoLister<UInt16, String>();
