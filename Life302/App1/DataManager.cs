@@ -7,24 +7,82 @@ using Windows.ApplicationModel;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Popups;
+using Windows.UI.Xaml;
 
 namespace Life302
 {
-    public class DataManager
+    public class DataManager : DependencyObject
     {
         SortedDictionary<String, SortedSet<String>> storedDrosophilaNetwork;
-        SortedDictionary<String, SortedSet<String>> storedHumanNetwork;
-        SortedDictionary<String, String> storedDrosophilaToHumanOrtholog;
-        SortedDictionary<String, SortedSet<String>> storedUniprotMapper;
-        SortedDictionary<String, SortedSet<String>> storedMappedOrtholog;
-        SortedDictionary<String, String> storedValidOrtholog;
-        SortedDictionary<UInt16, SortedSet<String>>[] storedRValue;
+        public Boolean IsDrosophilaNetworkStored
+        {
+            get { return (Boolean)GetValue(DrosophilaNetworkStoredProperty); }
+            set { SetValue(DrosophilaNetworkStoredProperty, value); }
+        }
+        public static readonly DependencyProperty DrosophilaNetworkStoredProperty
+            = DependencyProperty.Register("IsDrosophilaNetworkStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
 
-        public async Task<SortedDictionary<String, String>> readValidOrtholog(SortedDictionary<String, SortedSet<String>> drosophila, SortedDictionary<String, SortedSet<String>> human)
+        SortedDictionary<String, SortedSet<String>> storedHumanNetwork;
+        public Boolean IsHumanNetworkStored
+        {
+            get { return (Boolean)GetValue(HumanNetworkStoredProperty); }
+            set { SetValue(HumanNetworkStoredProperty, value); }
+        }
+        public static readonly DependencyProperty HumanNetworkStoredProperty
+            = DependencyProperty.Register("IsHumanNetworkStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
+
+        SortedDictionary<String, String> storedDrosophilaToHumanOrtholog;
+        public Boolean IsDrosophilaToHumanOrthologStored
+        {
+            get { return (Boolean)GetValue(DrosophilaToHumanOrthologStoredProperty); }
+            set { SetValue(DrosophilaToHumanOrthologStoredProperty, value); }
+        }
+        public static readonly DependencyProperty DrosophilaToHumanOrthologStoredProperty
+            = DependencyProperty.Register("IsDrosophilaToHumanOrthologStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
+
+        SortedDictionary<String, SortedSet<String>> storedUniprotMapper;
+        public Boolean IsUniprotMapperStored
+        {
+            get { return (Boolean)GetValue(UniprotMapperStoredProperty); }
+            set { SetValue(UniprotMapperStoredProperty, value); }
+        }
+        public static readonly DependencyProperty UniprotMapperStoredProperty
+            = DependencyProperty.Register("IsUniprotMapperStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
+
+        SortedDictionary<String, SortedSet<String>> storedMappedOrtholog;
+        public Boolean IsMappedOrthologStored
+        {
+            get { return (Boolean)GetValue(MappedOrthologStoredProperty); }
+            set { SetValue(MappedOrthologStoredProperty, value); }
+        }
+        public static readonly DependencyProperty MappedOrthologStoredProperty
+            = DependencyProperty.Register("IsMappedOrthologStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
+
+        SortedDictionary<String, String> storedValidOrtholog;
+        public Boolean IsValidOrthologStored
+        {
+            get { return (Boolean)GetValue(ValidOrthologStoredProperty); }
+            set { SetValue(ValidOrthologStoredProperty, value); }
+        }
+        public static readonly DependencyProperty ValidOrthologStoredProperty
+            = DependencyProperty.Register("IsValidOrthologStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
+
+        SortedDictionary<UInt16, SortedSet<String>>[] storedRValue;
+        public Boolean IsRValueStored
+        {
+            get { return (Boolean)GetValue(RValueStoredProperty); }
+            set { SetValue(RValueStoredProperty, value); }
+        }
+        public static readonly DependencyProperty RValueStoredProperty
+            = DependencyProperty.Register("IsRValueStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
+
+        public async Task<SortedDictionary<String, String>> readValidOrtholog()
         {
             if (storedValidOrtholog == null)
             {
                 #region calculation
+                var drosophila = await readDrosophilaNetwork();
+                var human = await readHumanNetwork();
                 var mapped = await readMappedOrtholog();
                 var orthologsFilteredDrosophilaHuman = new Dictionary<String, String>();
                 var orthologsAmbiguous = new Dictionary<String, SortedSet<String>>();
@@ -54,6 +112,7 @@ namespace Life302
 
                 storedValidOrtholog = new SortedDictionary<String, String>(orthologsFilteredDrosophilaHuman);
                 #endregion
+                IsValidOrthologStored = true;
             }
 
             return storedValidOrtholog;
@@ -61,9 +120,7 @@ namespace Life302
 
         public async Task saveValidOrtholog()
         {
-            var drosophila = await readDrosophilaNetwork();
-            var human = await readHumanNetwork();
-            var ortholog = await readValidOrtholog(drosophila, human);
+            var ortholog = await readValidOrtholog();
 
             await CsvFileSave(async delegate(StorageFile savefile)
             {
@@ -81,7 +138,7 @@ namespace Life302
                 System.Diagnostics.Debug.WriteLine("Started reading human network");
                 var human = await readHumanNetwork();
 
-                var orthologsFilteredDrosophilaHuman = await readValidOrtholog(drosophila, human);
+                var orthologsFilteredDrosophilaHuman = await readValidOrtholog();
 
                 System.Diagnostics.Debug.WriteLine("Started calculating r values");
 
@@ -127,6 +184,7 @@ namespace Life302
                     humanSpecificRValueList.GetSortedDictionary()
                 };
                 #endregion
+                IsRValueStored = true;
             }
 
             return storedRValue;
@@ -220,6 +278,7 @@ namespace Life302
 
                 storedMappedOrtholog = newlyMappedOrtholog;
                 #endregion
+                IsMappedOrthologStored = true;
             }
 
             return storedMappedOrtholog;
@@ -244,6 +303,7 @@ namespace Life302
                 var files = await folder.GetFilesAsync();
                 storedDrosophilaNetwork = await DataProcessor.readDrosophilaNetwork(files.ToArray());
                 #endregion
+                IsDrosophilaNetworkStored = true;
             }
 
             return storedDrosophilaNetwork;
@@ -268,6 +328,7 @@ namespace Life302
                 StorageFile file = (await folder.GetFilesAsync())[0];
                 storedHumanNetwork = await DataProcessor.readHumanNetwork(false, file);
                 #endregion
+                IsHumanNetworkStored = true;
             }
 
             return storedHumanNetwork;
@@ -292,6 +353,7 @@ namespace Life302
                 StorageFile mapperfile = await mapperfolder.GetFileAsync("HUMAN_9606_idmapping.txt");
                 storedUniprotMapper = await DataProcessor.readUniprotMapper(mapperfile, false);
                 #endregion
+                IsUniprotMapperStored = true;
             }
 
             return storedUniprotMapper;
@@ -316,6 +378,7 @@ namespace Life302
                 StorageFile file = (await folder.GetFilesAsync())[0];
                 storedDrosophilaToHumanOrtholog = await DataProcessor.readOrtholog(file, "Drosophila melanogaster", "Homo Sapiens");
                 #endregion
+                IsDrosophilaToHumanOrthologStored = true;
             }
 
             return storedDrosophilaToHumanOrtholog;
