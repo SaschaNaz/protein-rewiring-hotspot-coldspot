@@ -11,29 +11,24 @@ namespace Life302
 {
     public static class DataProcessor
     {
-        class pvalueComparer : IComparer<String>
-        {   
-            // Calls CaseInsensitiveComparer.Compare with the parameters reversed. 
-            int IComparer.Compare(Object x, Object y)
-            {
-                return ((new CaseInsensitiveComparer()).Compare(y, x));
-            }
-
-        }
-
-
-        public async static Task<List<String>> readDavidResult(StorageFile file)
+        public static Int32 ComparePValueAnnotationPair(KeyValuePair<Double, String> x, KeyValuePair<Double, String> y)
         {
-            var list = new SortedSet<String>(await FileIO.ReadLinesAsync(file), );
-            //list
+            return x.Key.CompareTo(y.Key);
+        }
+        
+        public async static Task<List<KeyValuePair<Double, String>>> readDavidResult(StorageFile file)
+        {
+            var list = new List<KeyValuePair<Double, String>>();
+            
             foreach (String line in await FileIO.ReadLinesAsync(file))
             {
                 var splitted = line.Split('\t');
                 if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
-                    dictionary.Add(Convert.ToDouble(splitted[4]), splitted[1].Split('~')[1]);
+                    list.Add(new KeyValuePair<Double, String>(Convert.ToDouble(splitted[4]), splitted[1].Split('~')[1]));
             }
 
-            return new List<String>(dictionary);
+            list.Sort(ComparePValueAnnotationPair);
+            return list;
         }
 
         public async static Task<SortedDictionary<String, SortedSet<String>>> readDrosophilaNetwork(params StorageFile[] files)
@@ -115,6 +110,21 @@ namespace Life302
                     writer.WriteString(
                         String.Format("{0},{1}\n", firstColumnName, secondColumnName));
                     foreach (KeyValuePair<T1, String> pair in dictionary)
+                        writer.WriteString(String.Format("{0},{1}\n", pair.Key, pair.Value));
+                    await writer.StoreAsync();
+                }
+            }
+        }
+
+        public async static Task saveStringPairList<T1>(StorageFile file, String firstColumnName, String secondColumnName, List<KeyValuePair<T1, String>> pairlist)
+        {
+            using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+            {
+                using (var writer = new DataWriter(stream))
+                {
+                    writer.WriteString(
+                        String.Format("{0},{1}\n", firstColumnName, secondColumnName));
+                    foreach (KeyValuePair<T1, String> pair in pairlist)
                         writer.WriteString(String.Format("{0},{1}\n", pair.Key, pair.Value));
                     await writer.StoreAsync();
                 }

@@ -92,7 +92,7 @@ namespace Life302
             foreach (StorageFile file in await folder.GetFilesAsync())
             {
                 var processfile = await processfolder.CreateFileAsync(file.Name);
-                await DataProcessor.saveStringDictionary(processfile, "p value", "Annotation", await DataProcessor.readDavidResult(file));
+                await DataProcessor.saveStringPairList(processfile, "p value", "Annotation", await DataProcessor.readDavidResult(file));
             }
             foreach (StorageFolder childfolder in await folder.GetFoldersAsync())
             {
