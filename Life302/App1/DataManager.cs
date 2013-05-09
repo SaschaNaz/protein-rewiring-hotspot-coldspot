@@ -76,6 +76,31 @@ namespace Life302
         public static readonly DependencyProperty RValueStoredProperty
             = DependencyProperty.Register("IsRValueStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
 
+        public async Task readDavidResults()
+        {
+            FolderPicker folderPicker = new FolderPicker();
+            folderPicker.FileTypeFilter.Add(".txt");
+            var folder = await folderPicker.PickSingleFolderAsync();
+            var processfolder = await folderPicker.PickSingleFolderAsync();
+
+            if (folder != null && processfolder != null)
+                await readDavidFolder(folder, processfolder);
+        }
+
+        async Task readDavidFolder(StorageFolder folder, StorageFolder processfolder)
+        {
+            foreach (StorageFile file in await folder.GetFilesAsync())
+            {
+                var processfile = await processfolder.CreateFileAsync(file.Name);
+                await DataProcessor.saveStringDictionary(processfile, "p value", "Annotation", await DataProcessor.readDavidResult(file));
+            }
+            foreach (StorageFolder childfolder in await folder.GetFoldersAsync())
+            {
+                var processChildFolder = await processfolder.CreateFolderAsync(childfolder.Name);
+                await readDavidFolder(childfolder, processChildFolder);
+            }
+        }
+
         public async Task<SortedDictionary<String, String>> readValidOrtholog()
         {
             if (storedValidOrtholog == null)
