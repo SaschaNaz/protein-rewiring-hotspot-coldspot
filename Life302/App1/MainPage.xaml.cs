@@ -36,27 +36,18 @@ namespace Life302
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        DataManager manager = new DataManager();
+        public DataManager manager = new DataManager();
 
         public MainPage()
         {
             this.InitializeComponent();
+            this.DataContext = manager;
             Process();
         }
 
         async void Process()
         {
-            //await saveDrosophilaNetwork();
-            //await saveDrosophilaToHumanOrtholog();
-            //await saveMappedOrtholog();
-            //await saveUniprotMapper();
-            await manager.saveHumanNetwork();
-
-            //var ortholog = await readDrosophilaToHumanOrtholog();
-
-            //await saveRValue();
-
-            //await saveValidOrtholog();
+            await manager.readDavidResults();
         }
 
         /// <summary>
@@ -66,6 +57,81 @@ namespace Life302
         /// property is typically used to configure the page.</param>
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
+        }
+
+        private async void SaveDrosophilaPPINetwork(object sender, RoutedEventArgs e)
+        {
+            await manager.saveDrosophilaNetwork();
+        }
+
+        private async void SaveHumanPPINetwork(object sender, RoutedEventArgs e)
+        {
+            await manager.saveHumanNetwork();
+        }
+
+        private async void SaveDrosophilaToHumanOrtholog(object sender, RoutedEventArgs e)
+        {
+            await manager.saveDrosophilaToHumanOrtholog();
+        }
+
+        private async void SaveUniprotMapper(object sender, RoutedEventArgs e)
+        {
+            await manager.saveUniprotMapper();
+        }
+
+        private async void SaveMappedOrtholog(object sender, RoutedEventArgs e)
+        {
+            await manager.saveMappedOrtholog();
+        }
+
+        private async void SaveValidOrtholog(object sender, RoutedEventArgs e)
+        {
+            await manager.saveValidOrtholog();
+        }
+
+        private async void SaveRValue(object sender, RoutedEventArgs e)
+        {
+            await manager.saveRValue();
+        }
+
+        private async void SaveRValueSpread(object sender, RoutedEventArgs e)
+        {
+            await manager.saveRValueSpread();
+        }
+
+        private async void LoadDrosophilaPPINetwork(object sender, RoutedEventArgs e)
+        {
+            await manager.readDrosophilaNetwork();
+        }
+
+        private async void LoadHumanPPINetwork(object sender, RoutedEventArgs e)
+        {
+            await manager.readHumanNetwork();
+        }
+
+        private async void LoadDrosophilaToHumanOrtholog(object sender, RoutedEventArgs e)
+        {
+            await manager.readDrosophilaToHumanOrtholog();
+        }
+
+        private async void LoadUniprotMapper(object sender, RoutedEventArgs e)
+        {
+            await manager.readUniprotMapper();
+        }
+
+        private async void LoadMappedOrtholog(object sender, RoutedEventArgs e)
+        {
+            await manager.readMappedOrtholog();
+        }
+
+        private async void LoadValidOrtholog(object sender, RoutedEventArgs e)
+        {
+            await manager.readValidOrtholog();
+        }
+
+        private async void LoadRValue(object sender, RoutedEventArgs e)
+        {
+            await manager.readRValue();
         }
     }
 }

@@ -8,37 +8,80 @@
     mc:Ignorable="d">
 
     <Grid Background="{StaticResource ApplicationPageBackgroundThemeBrush}">
-        <Grid Height="480" Width="480">
-            <Grid.RowDefinitions>
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-            </Grid.RowDefinitions>
+        <Grid Height="480" Width="640">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Row="0" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Drosophila PPI Network" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="0" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="1" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Human PPI Network" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="1" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="2" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Drosophila-Human Ortholog" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="2" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="3" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Uniprot Mapper" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="3" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="4" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Mapped Ortholog" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="4" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="5" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Valid Ortholog" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="5" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="6" HorizontalAlignment="Right" TextWrapping="Wrap" Text="R value" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="6" Grid.Column="1" Content="Save" />
-            <TextBlock Grid.Row="7" HorizontalAlignment="Right" TextWrapping="Wrap" Text="R value (spreaded)" VerticalAlignment="Center" FontSize="18" />
-            <Button Grid.Row="7" Grid.Column="1" Content="Save" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Drosophila PPI Network" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="0" Grid.Column="1" Content="Save" Click="SaveDrosophilaPPINetwork" />
+                <TextBlock Grid.Row="1" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Human PPI Network" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="1" Grid.Column="1" Content="Save" Click="SaveHumanPPINetwork" />
+                <TextBlock Grid.Row="2" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Drosophila-Human Ortholog" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="2" Grid.Column="1" Content="Save" Click="SaveDrosophilaToHumanOrtholog" />
+                <TextBlock Grid.Row="3" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Uniprot Mapper" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="3" Grid.Column="1" Content="Save" Click="SaveUniprotMapper" />
+                <TextBlock Grid.Row="4" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Mapped Ortholog" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="4" Grid.Column="1" Content="Save" Click="SaveMappedOrtholog" />
+                <TextBlock Grid.Row="5" HorizontalAlignment="Right" TextWrapping="Wrap" Text="Valid Ortholog" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="5" Grid.Column="1" Content="Save" Click="SaveValidOrtholog" />
+                <TextBlock Grid.Row="6" HorizontalAlignment="Right" TextWrapping="Wrap" Text="R value" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="6" Grid.Column="1" Content="Save" Click="SaveRValue" />
+                <TextBlock Grid.Row="7" HorizontalAlignment="Right" TextWrapping="Wrap" Text="R value (spreaded)" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="7" Grid.Column="1" Content="Save" Click="SaveRValueSpread" />
+            </Grid>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="50" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Row="0" Content="Load" Click="LoadDrosophilaPPINetwork" />
+                <CheckBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsDrosophilaNetworkStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Drosophila PPI Network" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="1" Content="Load" Click="LoadHumanPPINetwork" />
+                <CheckBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsHumanNetworkStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Human PPI Network" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="2" Content="Load" Click="LoadDrosophilaToHumanOrtholog" />
+                <CheckBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsDrosophilaToHumanOrthologStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Drosophila-Human Ortholog" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="3" Content="Load" Click="LoadUniprotMapper" />
+                <CheckBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsUniprotMapperStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Uniprot Mapper" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="4" Content="Load" Click="LoadMappedOrtholog" />
+                <CheckBox Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsMappedOrthologStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="4" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Mapped Ortholog" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="5" Content="Load" Click="LoadValidOrtholog" />
+                <CheckBox Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsValidOrthologStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="5" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Valid Ortholog" VerticalAlignment="Center" FontSize="18" />
+                <Button Grid.Row="6" Content="Load" Click="LoadRValue" />
+                <CheckBox Grid.Row="6" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Path=IsRValueStored, Mode=TwoWay}"/>
+                <TextBlock Grid.Row="6" Grid.Column="2" HorizontalAlignment="Left" TextWrapping="Wrap" Text="R value" VerticalAlignment="Center" FontSize="18" />
+            </Grid>
         </Grid>
     </Grid>
 </Page>

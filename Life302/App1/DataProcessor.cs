@@ -11,6 +11,31 @@ namespace Life302
 {
     public static class DataProcessor
     {
+        class pvalueComparer : IComparer<String>
+        {   
+            // Calls CaseInsensitiveComparer.Compare with the parameters reversed. 
+            int IComparer.Compare(Object x, Object y)
+            {
+                return ((new CaseInsensitiveComparer()).Compare(y, x));
+            }
+
+        }
+
+
+        public async static Task<List<String>> readDavidResult(StorageFile file)
+        {
+            var list = new SortedSet<String>(await FileIO.ReadLinesAsync(file), );
+            //list
+            foreach (String line in await FileIO.ReadLinesAsync(file))
+            {
+                var splitted = line.Split('\t');
+                if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
+                    dictionary.Add(Convert.ToDouble(splitted[4]), splitted[1].Split('~')[1]);
+            }
+
+            return new List<String>(dictionary);
+        }
+
         public async static Task<SortedDictionary<String, SortedSet<String>>> readDrosophilaNetwork(params StorageFile[] files)
         {
             var dictionary = new Dictionary<String, SortedSet<String>>();
@@ -81,7 +106,7 @@ namespace Life302
             //InParalog는 나중에 처리하고 일단 이건 보여주기용?
         }
 
-        public async static Task saveStringDictionary(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<String, String> dictionary)
+        public async static Task saveStringDictionary<T1>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, String> dictionary)
         {
             using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
             {
@@ -89,7 +114,7 @@ namespace Life302
                 {
                     writer.WriteString(
                         String.Format("{0},{1}\n", firstColumnName, secondColumnName));
-                    foreach (KeyValuePair<String, String> pair in dictionary)
+                    foreach (KeyValuePair<T1, String> pair in dictionary)
                         writer.WriteString(String.Format("{0},{1}\n", pair.Key, pair.Value));
                     await writer.StoreAsync();
                 }
