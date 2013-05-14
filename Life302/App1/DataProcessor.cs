@@ -16,7 +16,7 @@ namespace Life302
             return x.Key.CompareTo(y.Key);
         }
         
-        public async static Task<List<KeyValuePair<Double, String>>> readDavidResult(StorageFile file)
+        public async static Task<List<KeyValuePair<Double, String>>> readDavidProteinAnnotationResult(StorageFile file)
         {
             var list = new List<KeyValuePair<Double, String>>();
             
@@ -25,6 +25,21 @@ namespace Life302
                 var splitted = line.Split('\t');
                 if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
                     list.Add(new KeyValuePair<Double, String>(Convert.ToDouble(splitted[4]), splitted[1].Split('~')[1]));
+            }
+
+            list.Sort(ComparePValueAnnotationPair);
+            return list;
+        }
+
+        public async static Task<List<KeyValuePair<Double, String>>> readDavidDomainResult(StorageFile file)
+        {
+            var list = new List<KeyValuePair<Double, String>>();
+
+            foreach (String line in await FileIO.ReadLinesAsync(file))
+            {
+                var splitted = line.Split('\t');
+                if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
+                    list.Add(new KeyValuePair<Double, String>(Convert.ToDouble(splitted[4]), splitted[1].Split(':')[1]));
             }
 
             list.Sort(ComparePValueAnnotationPair);
