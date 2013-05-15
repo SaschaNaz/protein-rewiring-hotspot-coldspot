@@ -80,6 +80,11 @@ namespace Life302
         {
             FolderPicker folderPicker = new FolderPicker();
             folderPicker.FileTypeFilter.Add(".txt");
+
+            //변수 네 가지에 BP를 불러들이고 annotation마다로 검색한 뒤 평균치 검사해 분류
+            //아래거는 지우고
+            //폴더 던져주면 drosophila - human 따로 변수 네 가지 불러오는 함수 만들기. loadBP, loadDomain 등으로
+
             var folder = await folderPicker.PickSingleFolderAsync();
             var processfolder = await folderPicker.PickSingleFolderAsync();
 
@@ -92,7 +97,7 @@ namespace Life302
             foreach (StorageFile file in await folder.GetFilesAsync())
             {
                 var processfile = await processfolder.CreateFileAsync(file.Name);
-                await DataProcessor.saveStringPairList(processfile, "p value", "Annotation", 
+                await DataProcessor.saveStringDictionary(processfile, "Annotation Number", "p value", 
                     file.DisplayName != "domain" ? await DataProcessor.readDavidProteinAnnotationResult(file) : await DataProcessor.readDavidDomainResult(file));
             }
             foreach (StorageFolder childfolder in await folder.GetFoldersAsync())

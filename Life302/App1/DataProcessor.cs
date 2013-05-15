@@ -11,39 +11,37 @@ namespace Life302
 {
     public static class DataProcessor
     {
-        public static Int32 ComparePValueAnnotationPair(KeyValuePair<Double, String> x, KeyValuePair<Double, String> y)
-        {
-            return x.Key.CompareTo(y.Key);
-        }
+        //public static Int32 ComparePValueAnnotationPair(KeyValuePair<Double, String> x, KeyValuePair<Double, String> y)
+        //{
+        //    return x.Key.CompareTo(y.Key);
+        //}
         
-        public async static Task<List<KeyValuePair<Double, String>>> readDavidProteinAnnotationResult(StorageFile file)
+        public async static Task<SortedDictionary<String, Double>> readDavidProteinAnnotationResult(StorageFile file)
         {
-            var list = new List<KeyValuePair<Double, String>>();
+            var dictionary = new Dictionary<String, Double>();
             
             foreach (String line in await FileIO.ReadLinesAsync(file))
             {
                 var splitted = line.Split('\t');
                 if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
-                    list.Add(new KeyValuePair<Double, String>(Convert.ToDouble(splitted[4]), splitted[1].Split('~')[1]));
+                    dictionary.Add(splitted[1].Split('~')[0], Convert.ToDouble(splitted[4]));
             }
 
-            list.Sort(ComparePValueAnnotationPair);
-            return list;
+            return new SortedDictionary<String, Double>(dictionary);
         }
 
-        public async static Task<List<KeyValuePair<Double, String>>> readDavidDomainResult(StorageFile file)
+        public async static Task<SortedDictionary<String, Double>> readDavidDomainResult(StorageFile file)
         {
-            var list = new List<KeyValuePair<Double, String>>();
+            var dictionary = new Dictionary<String, Double>();
 
             foreach (String line in await FileIO.ReadLinesAsync(file))
             {
                 var splitted = line.Split('\t');
                 if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
-                    list.Add(new KeyValuePair<Double, String>(Convert.ToDouble(splitted[4]), splitted[1].Split(':')[1]));
+                    dictionary.Add(splitted[1].Split(':')[0], Convert.ToDouble(splitted[4]));
             }
 
-            list.Sort(ComparePValueAnnotationPair);
-            return list;
+            return new SortedDictionary<String, Double>(dictionary);
         }
 
         public async static Task<SortedDictionary<String, SortedSet<String>>> readDrosophilaNetwork(params StorageFile[] files)
@@ -116,7 +114,7 @@ namespace Life302
             //InParalog는 나중에 처리하고 일단 이건 보여주기용?
         }
 
-        public async static Task saveStringDictionary<T1>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, String> dictionary)
+        public async static Task saveStringDictionary<T1, T2>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, T2> dictionary)
         {
             using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
             {
@@ -124,7 +122,7 @@ namespace Life302
                 {
                     writer.WriteString(
                         String.Format("{0},{1}\n", firstColumnName, secondColumnName));
-                    foreach (KeyValuePair<T1, String> pair in dictionary)
+                    foreach (KeyValuePair<T1, T2> pair in dictionary)
                         writer.WriteString(String.Format("{0},{1}\n", pair.Key, pair.Value));
                     await writer.StoreAsync();
                 }
