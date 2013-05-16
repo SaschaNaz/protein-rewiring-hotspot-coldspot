@@ -24,21 +24,7 @@ namespace Life302
             {
                 var splitted = line.Split('\t');
                 if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
-                    dictionary.Add(splitted[1].Split('~')[0], Convert.ToDouble(splitted[4]));
-            }
-
-            return new SortedDictionary<String, Double>(dictionary);
-        }
-
-        public async static Task<SortedDictionary<String, Double>> readDavidDomainResult(StorageFile file)
-        {
-            var dictionary = new Dictionary<String, Double>();
-
-            foreach (String line in await FileIO.ReadLinesAsync(file))
-            {
-                var splitted = line.Split('\t');
-                if (splitted.Length > 1 && !splitted[0].StartsWith("Annotation") && splitted[0] != "Category")
-                    dictionary.Add(splitted[1].Split(':')[0], Convert.ToDouble(splitted[4]));
+                    dictionary.Add(splitted[1].Replace(',', '/'), Convert.ToDouble(splitted[4]));
             }
 
             return new SortedDictionary<String, Double>(dictionary);
