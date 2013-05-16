@@ -76,6 +76,43 @@ namespace Life302
         public static readonly DependencyProperty RValueStoredProperty
             = DependencyProperty.Register("IsRValueStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
 
+        public async Task<SortedDictionary<UInt16, SortedSet<Double>>> readHumanRvalueDndsPair()
+        {
+            var rvalues = await readRValue();
+            var humanOrthologRvalue = rvalues[1];
+            var humanSpecificRvalue = rvalues[3];
+            var humanRvalueSpread = new Dictionary<String, UInt16>();
+            foreach (KeyValuePair<UInt16, SortedSet<String>> pair in humanOrthologRvalue)
+                foreach (String str in pair.Value)
+                    humanRvalueSpread.Add(str, pair.Key);
+            foreach (KeyValuePair<UInt16, SortedSet<String>> pair in humanSpecificRvalue)
+                foreach (String str in pair.Value)
+                    humanRvalueSpread.Add(str, pair.Key);
+            var humanRvalueSpreadSorted = new SortedDictionary<String, UInt16>(humanRvalueSpread);
+
+            var mapper = await readUniprotMapperENSG();
+            //var mapperReversedLister = new AutoLister<String, String>();
+            //foreach (KeyValuePair<String, SortedSet<String>> pair in mapper)
+            //    foreach (String str in pair.Value)
+            //        mapperReversedLister.Add(str, pair.Key);
+            //var mapperReversed = mapperReversedLister.GetSortedDictionary();
+            
+            var humanDndsToMouse = await readHumanDndsToMouse();
+            var lister = new AutoLister<UInt16, Double>();
+            foreach (KeyValuePair<String, Double> pair in humanDndsToMouse)
+            {
+                SortedSet<String> refseqIds;
+                if (mapper.TryGetValue(pair.Key, out refseqIds))
+                    if (refseqIds.Count == 1)
+                    {
+                        UInt16 rvalue;
+                        if (humanRvalueSpreadSorted.TryGetValue(refseqIds.First(), out rvalue))
+                            lister.Add(rvalue, pair.Value);
+                    }
+            }
+            return lister.GetSortedDictionary();
+        }
+
         public async Task readDavidResults()
         {
             FolderPicker folderPicker = new FolderPicker();
@@ -182,6 +219,16 @@ namespace Life302
             }
 
             return storedValidOrtholog;
+        }
+
+        public async Task saveRvalueDndsSpread()
+        {
+            var RvalueDnds = await readHumanRvalueDndsPair();
+
+            await CsvFileSave(async delegate(StorageFile savefile)
+            {
+                await DataProcessor.saveStringSetDictionarySpread(savefile, "r value", "dn/ds", RvalueDnds);
+            }, "RvalueDnds");
         }
 
         public async Task saveValidOrtholog()
@@ -350,6 +397,13 @@ namespace Life302
             return storedMappedOrtholog;
         }
 
+        public async Task<SortedDictionary<String, Double>> readHumanDndsToMouse()
+        {
+            StorageFolder folder = await Package.Current.InstalledLocation.GetFolderAsync("HumanDnds");
+            StorageFile file = (await folder.GetFilesAsync())[0];
+            return await DataProcessor.readHumanDndsToMouse(file);   
+        }
+
         public async Task saveMappedOrtholog()
         {
             var mapped = await readMappedOrtholog();
@@ -417,12 +471,19 @@ namespace Life302
                 #region calculation
                 StorageFolder mapperfolder = await Package.Current.InstalledLocation.GetFolderAsync("Mapper");
                 StorageFile mapperfile = await mapperfolder.GetFileAsync("HUMAN_9606_idmapping.txt");
-                storedUniprotMapper = await DataProcessor.readUniprotMapper(mapperfile, false);
+                storedUniprotMapper = await DataProcessor.readUniprotMapper(mapperfile, "RefSeq", "Ensembl_PRO", false);
                 #endregion
                 IsUniprotMapperStored = true;
             }
 
             return storedUniprotMapper;
+        }
+
+        public async Task<SortedDictionary<String, SortedSet<String>>> readUniprotMapperENSG()
+        {
+            StorageFolder mapperfolder = await Package.Current.InstalledLocation.GetFolderAsync("Mapper");
+            StorageFile mapperfile = await mapperfolder.GetFileAsync("HUMAN_9606_idmapping.txt");
+            return await DataProcessor.readUniprotMapper(mapperfile, "RefSeq", "Ensembl", false);
         }
 
         public async Task saveUniprotMapper()

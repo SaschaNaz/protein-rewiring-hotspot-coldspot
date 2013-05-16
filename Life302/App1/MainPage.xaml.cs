@@ -47,7 +47,8 @@ namespace Life302
 
         async void Process()
         {
-            await manager.readDavidResults();
+            //await manager.readDavidResults();
+            await manager.saveRvalueDndsSpread();
         }
 
         /// <summary>
