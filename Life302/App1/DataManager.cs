@@ -86,19 +86,54 @@ namespace Life302
             //폴더 던져주면 drosophila - human 따로 변수 네 가지 불러오는 함수 만들기. loadBP, loadDomain 등으로
 
             var folder = await folderPicker.PickSingleFolderAsync();
-            var processfolder = await folderPicker.PickSingleFolderAsync();
+            //var processfolder = await folderPicker.PickSingleFolderAsync();
 
-            if (folder != null && processfolder != null)
-                await readDavidFolder(folder, processfolder);
+            if (folder != null)
+            {
+                await readDavidPvalue(await folder.GetFolderAsync("Drosophila"));
+                await readDavidPvalue(await folder.GetFolderAsync("Human"));
+            }
+        }
+
+        async Task readDavidPvalue(StorageFolder folder)
+        {
+            SortedDictionary<String, Double> nonorthologColdspotPvalues;
+            SortedDictionary<String, Double> nonorthologHotspotPvalues;
+            SortedDictionary<String, Double> orthologColdspotPvalues;
+            SortedDictionary<String, Double> orthologHotspotPvalues;
+
+            {
+                var childfolder = await folder.GetFolderAsync("nonortholog-coldspot");
+                nonorthologColdspotPvalues = await DataProcessor.readDavidProteinAnnotationResult(await childfolder.GetFileAsync("bp.txt"));
+            }
+            {
+                var childfolder = await folder.GetFolderAsync("nonortholog-hotspot");
+                nonorthologHotspotPvalues = await DataProcessor.readDavidProteinAnnotationResult(await childfolder.GetFileAsync("bp.txt"));
+            }
+            {
+                var childfolder = await folder.GetFolderAsync("ortholog-coldspot");
+                orthologColdspotPvalues = await DataProcessor.readDavidProteinAnnotationResult(await childfolder.GetFileAsync("bp.txt"));
+            }
+            {
+                var childfolder = await folder.GetFolderAsync("ortholog-hotspot");
+                orthologHotspotPvalues = await DataProcessor.readDavidProteinAnnotationResult(await childfolder.GetFileAsync("bp.txt"));
+            }
+
+            foreach (KeyValuePair<String, Double> pair in nonorthologColdspotPvalues)
+            {
+                Double value;
+                if (orthologColdspotPvalues.TryGetValue(pair.Key, out value) && Math.Abs(Math.Log(pair.Value) - Math.Log(value)) < 3)
+                {
+                }
+            }
         }
 
         async Task readDavidFolder(StorageFolder folder, StorageFolder processfolder)
         {
             foreach (StorageFile file in await folder.GetFilesAsync())
             {
-                var processfile = await processfolder.CreateFileAsync(file.Name);
-                await DataProcessor.saveStringDictionary(processfile, "Annotation Number", "p value", 
-                    file.DisplayName != "domain" ? await DataProcessor.readDavidProteinAnnotationResult(file) : await DataProcessor.readDavidDomainResult(file));
+                var processfile = await processfolder.CreateFileAsync(file.DisplayName + ".csv");
+                await DataProcessor.saveStringDictionary(processfile, "Annotation Number", "p value", await DataProcessor.readDavidProteinAnnotationResult(file));
             }
             foreach (StorageFolder childfolder in await folder.GetFoldersAsync())
             {
