@@ -122,7 +122,7 @@ namespace Life302
             foreach (KeyValuePair<String, Double> pair in nonorthologColdspotPvalues)
             {
                 Double value;
-                if (orthologColdspotPvalues.TryGetValue(pair.Key, out value) && Math.Abs(Math.Log(pair.Value) - Math.Log(value)) < 3)
+                if (orthologColdspotPvalues.TryGetValue(pair.Key, out value) && Math.Abs(Math.Log(pair.Value) - Math.Log(value)) < Math.Abs(Math.Log(Math.Min(pair.Value, value))) * 0.4)
                 {
                 }
             }
