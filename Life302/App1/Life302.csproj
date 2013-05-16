@@ -124,6 +124,7 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="App1_TemporaryKey.pfx" />
+    <Content Include="HumanDnds\human_dn_ds_dnds_with_mouse.txt" />
     <Content Include="Mapper\HUMAN_9606_idmapping.txt" />
   </ItemGroup>
   <ItemGroup>

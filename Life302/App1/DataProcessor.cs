@@ -130,7 +130,7 @@ namespace Life302
             }
         }
 
-        public async static Task<SortedDictionary<String, SortedSet<String>>> readUniprotMapper(StorageFile file, Boolean deleteDot)
+        public async static Task<SortedDictionary<String, SortedSet<String>>> readUniprotMapper(StorageFile file, String firstColumn, String SecondColumn, Boolean deleteDot)
         {
             Func<String, String> func;
             if (deleteDot)
@@ -148,16 +148,21 @@ namespace Life302
             Parallel.ForEach(filestr, delegate(String str)
             {
                 String[] splitted = str.Split('\t');
-                switch (splitted[1])
-                {
-                    case "RefSeq":
-                    case "Ensembl_PRO":
-                        lock (newstr)
-                        {
-                            newstr.Add(str);
-                        }
-                        break;
-                }
+                if (splitted[1] == firstColumn || splitted[1] == SecondColumn)
+                    lock (newstr)
+                    {
+                        newstr.Add(str);
+                    }
+                //switch (splitted[1])
+                //{
+                //    case firstColumn:
+                //    case "Ensembl_PRO":
+                //        lock (newstr)
+                //        {
+                //            newstr.Add(str);
+                //        }
+                //        break;
+                //}
             });
             SortedSet<String> sortedstr = new SortedSet<String>(newstr);
 
@@ -167,7 +172,7 @@ namespace Life302
             {
                 String[] splitted = sortedstr.First().Split('\t');
                 currentId = splitted[0];
-                if (splitted[1] == "RefSeq")
+                if (splitted[1] == firstColumn)
                     refseqList.Add(func(splitted[2]));
                 else
                     ensembleproList.Add(splitted[2]);
@@ -185,7 +190,7 @@ namespace Life302
                     ensembleproList = new SortedSet<String>();
                 }
 
-                if (splitted[1] == "RefSeq")
+                if (splitted[1] == firstColumn)
                     refseqList.Add(func(splitted[2]));
                 else
                     ensembleproList.Add(splitted[2]);
@@ -217,6 +222,20 @@ namespace Life302
             return dictionary;
         }
 
+        public async static Task<SortedDictionary<String, Double>> readHumanDndsToMouse(StorageFile file)
+        {
+            var dictionary = new Dictionary<String, Double>();
+            var filestr = await FileIO.ReadLinesAsync(file);
+            filestr.RemoveAt(0);
+            foreach (String line in filestr)
+            {
+                var splitted = line.Split('\t');
+                dictionary.Add(splitted[0], Convert.ToDouble(splitted[1]));
+            }
+
+            return new SortedDictionary<String, Double>(dictionary);
+        }
+
         public async static Task saveStringSetDictionary<T1>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, SortedSet<String>> dictionary)
         {
             using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
@@ -232,7 +251,7 @@ namespace Life302
             }
         }
 
-        public async static Task saveStringSetDictionarySpread<T1>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, SortedSet<String>> dictionary)
+        public async static Task saveStringSetDictionarySpread<T1, T2>(StorageFile file, String firstColumnName, String secondColumnName, SortedDictionary<T1, SortedSet<T2>> dictionary)
         {
             using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
             {
@@ -240,8 +259,8 @@ namespace Life302
                 {
                     writer.WriteString(
                         String.Format("{0},{1}\n", firstColumnName, secondColumnName));
-                    foreach (KeyValuePair<T1, SortedSet<String>> pair in dictionary)
-                        foreach (String secondItem in pair.Value)
+                    foreach (KeyValuePair<T1, SortedSet<T2>> pair in dictionary)
+                        foreach (T2 secondItem in pair.Value)
                             writer.WriteString(String.Format("{0},{1}\n", pair.Key, secondItem));
                     await writer.StoreAsync();
                 }
