@@ -76,20 +76,21 @@ namespace Life302
         public static readonly DependencyProperty RValueStoredProperty
             = DependencyProperty.Register("IsRValueStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
 
-        public async Task<SortedDictionary<UInt16, SortedSet<Double>>> readHumanRvalueDndsPair()
+        public async Task<List<Double>[]> readHumanRvalueDndsPair()
         {
-            var rvalues = await readRValue();
-            var humanOrthologRvalue = rvalues[1];
-            var humanSpecificRvalue = rvalues[3];
-            var humanRvalueSpread = new Dictionary<String, UInt16>();
-            foreach (KeyValuePair<UInt16, SortedSet<String>> pair in humanOrthologRvalue)
-                foreach (String str in pair.Value)
-                    humanRvalueSpread.Add(str, pair.Key);
-            foreach (KeyValuePair<UInt16, SortedSet<String>> pair in humanSpecificRvalue)
-                foreach (String str in pair.Value)
-                    humanRvalueSpread.Add(str, pair.Key);
-            var humanRvalueSpreadSorted = new SortedDictionary<String, UInt16>(humanRvalueSpread);
-
+            //var rvalues = await readRValue();
+            //var humanOrthologRvalue = rvalues[1];
+            //var humanSpecificRvalue = rvalues[3];
+            //var humanRvalueSpread = new Dictionary<String, UInt16>();
+            //foreach (KeyValuePair<UInt16, SortedSet<String>> pair in humanOrthologRvalue)
+            //    foreach (String str in pair.Value)
+            //        humanRvalueSpread.Add(str, pair.Key);
+            //foreach (KeyValuePair<UInt16, SortedSet<String>> pair in humanSpecificRvalue)
+            //    foreach (String str in pair.Value)
+            //        humanRvalueSpread.Add(str, pair.Key);
+            //var humanRvalueSpreadSorted = new SortedDictionary<String, UInt16>(humanRvalueSpread);
+            var humanHotspot = await readHumanHotspot();
+            var humanColdspot = await readHumanColdspot();
             var mapper = await readUniprotMapperENSG();
             //var mapperReversedLister = new AutoLister<String, String>();
             //foreach (KeyValuePair<String, SortedSet<String>> pair in mapper)
@@ -97,20 +98,34 @@ namespace Life302
             //        mapperReversedLister.Add(str, pair.Key);
             //var mapperReversed = mapperReversedLister.GetSortedDictionary();
             
+            
             var humanDndsToMouse = await readHumanDndsToMouse();
-            var lister = new AutoLister<UInt16, Double>();
+            var hotspotDnds = new List<Double>();
+            var coldspotDnds = new List<Double>();
             foreach (KeyValuePair<String, Double> pair in humanDndsToMouse)
             {
                 SortedSet<String> refseqIds;
                 if (mapper.TryGetValue(pair.Key, out refseqIds))
-                    if (refseqIds.Count == 1)
-                    {
-                        UInt16 rvalue;
-                        if (humanRvalueSpreadSorted.TryGetValue(refseqIds.First(), out rvalue))
-                            lister.Add(rvalue, pair.Value);
-                    }
+                    if (refseqIds.Count == 1 && humanHotspot.Contains(refseqIds.First().Split('.')[0]))
+                        hotspotDnds.Add(pair.Value);
+                    else if (refseqIds.Count == 1 && humanColdspot.Contains(refseqIds.First().Split('.')[0]))
+                        coldspotDnds.Add(pair.Value);
             }
-            return lister.GetSortedDictionary();
+            return new List<Double>[] { hotspotDnds, coldspotDnds };
+        }
+
+        public async Task<SortedSet<String>> readHumanHotspot()
+        {
+            StorageFolder folder = await Package.Current.InstalledLocation.GetFolderAsync("SecondaryData");
+            var file = await folder.GetFileAsync("humanHotspot.txt");
+            return await DataProcessor.readSimpleList(file);
+        }
+
+        public async Task<SortedSet<String>> readHumanColdspot()
+        {
+            StorageFolder folder = await Package.Current.InstalledLocation.GetFolderAsync("SecondaryData");
+            var file = await folder.GetFileAsync("humanColdspot.txt");
+            return await DataProcessor.readSimpleList(file);
         }
 
         public async Task readDavidResults()
@@ -227,8 +242,12 @@ namespace Life302
 
             await CsvFileSave(async delegate(StorageFile savefile)
             {
-                await DataProcessor.saveStringSetDictionarySpread(savefile, "r value", "dn/ds", RvalueDnds);
-            }, "RvalueDnds");
+                await DataProcessor.saveSimpleList(savefile, RvalueDnds[0]);
+            }, "RvalueDndsHotspot");
+            await CsvFileSave(async delegate(StorageFile savefile)
+            {
+                await DataProcessor.saveSimpleList(savefile, RvalueDnds[1]);
+            }, "RvalueDndsColdspot");
         }
 
         public async Task saveValidOrtholog()
