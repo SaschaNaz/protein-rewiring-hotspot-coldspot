@@ -124,7 +124,9 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="App1_TemporaryKey.pfx" />
+    <Content Include="SecondaryData\humanColdspot.txt" />
     <Content Include="HumanDnds\human_dn_ds_dnds_with_mouse.txt" />
+    <Content Include="SecondaryData\humanHotspot.txt" />
     <Content Include="Mapper\HUMAN_9606_idmapping.txt" />
   </ItemGroup>
   <ItemGroup>

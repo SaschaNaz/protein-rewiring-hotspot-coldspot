@@ -11,6 +11,29 @@ namespace Life302
 {
     public static class DataProcessor
     {
+        public async static Task<SortedSet<String>> readSimpleList(StorageFile file)
+        {
+            var list = new List<String>();
+            var filestr = await FileIO.ReadLinesAsync(file);
+
+            foreach (String line in filestr)
+                list.Add(line);
+
+            return new SortedSet<String>(list);
+        }
+
+        public async static Task saveSimpleList<T>(StorageFile file, IEnumerable<T> set)
+        {
+            using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+            {
+                using (var writer = new DataWriter(stream))
+                {
+                    foreach (T str in set)
+                        writer.WriteString(String.Format("{0}\n", str));
+                    await writer.StoreAsync();
+                }
+            }
+        }
         //public static Int32 ComparePValueAnnotationPair(KeyValuePair<Double, String> x, KeyValuePair<Double, String> y)
         //{
         //    return x.Key.CompareTo(y.Key);
