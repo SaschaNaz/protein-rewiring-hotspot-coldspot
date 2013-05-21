@@ -48,7 +48,21 @@ namespace Life302
         async void Process()
         {
             //await manager.readDavidResults();
-            await manager.saveRvalueDndsSpread();
+            //await manager.saveRvalueDndsSpread();
+            var datasheet = await manager.makeHotColdSpecifiedNetworks();
+            FileSavePicker picker = new FileSavePicker();
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            picker.FileTypeChoices.Add("datasheet text", new List<String> { ".txt" });
+            StorageFile savefile = await picker.PickSaveFileAsync();
+            if (savefile != null)
+            {
+                await datasheet.SaveToFile(savefile, true);
+                await new MessageDialog("Completed").ShowAsync();
+            }
+            else
+            {
+                await new MessageDialog("Canceled").ShowAsync();
+            }
         }
 
         /// <summary>
