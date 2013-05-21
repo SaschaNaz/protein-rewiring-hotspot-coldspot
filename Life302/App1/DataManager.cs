@@ -76,6 +76,30 @@ namespace Life302
         public static readonly DependencyProperty RValueStoredProperty
             = DependencyProperty.Register("IsRValueStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
 
+        public async Task<DataSheet> makeHotColdSpecifiedNetworks()
+        {
+            var datasheet = new DataSheet("Protein Name", "Rewiring Type", "Protein Interactions");
+            
+            var humanNetwork = await readHumanNetwork();
+            //var drosophilaNetwork = await readDrosophilaNetwork();
+
+            var humanHotspot = await readHumanHotspot();
+            var humanColdspot = await readHumanColdspot();
+
+            foreach (KeyValuePair<String, SortedSet<String>> pair in humanNetwork)
+            {
+                String nodot = pair.Key.Split('.')[0];
+                if (humanHotspot.Contains(nodot))
+                    datasheet.AddDataForKey(nodot, "Hotspot");
+                else if (humanColdspot.Contains(nodot))
+                    datasheet.AddDataForKey(nodot, "Coldspot");
+                else
+                    datasheet.AddDataForKey(nodot, "Unknown");
+                datasheet.AddDataForKey(nodot, pair.Value.ToArray());
+            }
+            return datasheet;
+        }
+
         public async Task<List<Double>[]> readHumanRvalueDndsPair()
         {
             //var rvalues = await readRValue();
@@ -105,11 +129,14 @@ namespace Life302
             foreach (KeyValuePair<String, Double> pair in humanDndsToMouse)
             {
                 SortedSet<String> refseqIds;
-                if (mapper.TryGetValue(pair.Key, out refseqIds))
-                    if (refseqIds.Count == 1 && humanHotspot.Contains(refseqIds.First().Split('.')[0]))
+                if (mapper.TryGetValue(pair.Key, out refseqIds) && refseqIds.Count == 1)
+                {
+                    String refseqId = refseqIds.First().Split('.')[0];
+                    if (humanHotspot.Contains(refseqId))
                         hotspotDnds.Add(pair.Value);
-                    else if (refseqIds.Count == 1 && humanColdspot.Contains(refseqIds.First().Split('.')[0]))
+                    else if (humanColdspot.Contains(refseqId))
                         coldspotDnds.Add(pair.Value);
+                }
             }
             return new List<Double>[] { hotspotDnds, coldspotDnds };
         }

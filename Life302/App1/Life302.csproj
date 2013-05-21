@@ -113,6 +113,7 @@
     <Compile Include="AutoLister.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="DataProcessor.cs" />
+    <Compile Include="DataSheet.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
