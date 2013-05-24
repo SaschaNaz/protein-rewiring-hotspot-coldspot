@@ -111,9 +111,11 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="AutoLister.cs" />
+    <Compile Include="BioDataProcessor.cs" />
+    <Compile Include="BioDataReader.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="DataProcessor.cs" />
-    <Compile Include="DataSheet.cs" />
+    <Compile Include="Datasheet.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>

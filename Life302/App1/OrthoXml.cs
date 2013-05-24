@@ -244,18 +244,42 @@ namespace Life302.OrthoXml
             return new SortedDictionary<String,String>(dictionary);
         }
 
-        //MapGeneToGeneTotalOrtholog: 선형으로 만들 순 없고 네트워크 불러와서 노드 연결해주는 식이 필요함.
-
-        public class GeneDictionary
+        public Datasheet<String> MapGeneToGeneSeedOrthologAsync(String referenceSpeciesName, String comparisonSpeciesName)
         {
-            List<Gene> genelist = new List<Gene>();
+            var datasheet = new Datasheet<String>();
+            Species referenceSpecies = speciesDictionary[referenceSpeciesName];
+            Species comparisonSpecies = speciesDictionary[comparisonSpeciesName];
 
-            //앙상블 진 아이디 및 그에 맞는 프로테인 아이디를 갖고 있다.
-            //앙상블 진 아이디와 그에 맞는 NP 아이디를 일부 갖고 있다.
-            //앙상블 프로테인 아이디와 그에 맞는 NP 아이디를 일부 갖고 있다.
-            //이를 조합해 앙상블 진 아이디와 NP 아이디를 매핑할 수 있을 것
-            //라고 생각했는데 조교님이 안되는건 그냥 넘기래요
-            //ENSP쓰라는데 무슨말이지
+            Gene[] genes = referenceSpecies.dictionary.Values.ToArray();
+            Parallel.ForEach(genes, delegate(Gene gene)
+            {
+                OrthologGroup orthologGroup = Database.FindGeneOrtholog(gene.GeneId);
+                if (orthologGroup != null)
+                {
+                    var referenceGene = orthologGroup.SeedOrthologs.Find(delegate(SeedOrtholog seed) { if (seed.Origin.Name == referenceSpeciesName) return true; else return false; });
+                    var comparisonGene = orthologGroup.SeedOrthologs.Find(delegate(SeedOrtholog seed) { if (seed.Origin.Name == comparisonSpeciesName) return true; else return false; });
+                    String referenceGeneId = referenceGene.OrthologGene.GeneId;
+                    String comparisonProteinId = comparisonGene.OrthologGene.ProteinId;
+                    //if (referenceSpeciesGeneMapper != null)
+                    //    referenceGeneId = referenceSpeciesGeneMapper[referenceGeneId];
+                    //if (comparisonSpeciesProteinMapper != null)
+                    //    comparisonProteinId = comparisonSpeciesProteinMapper[comparisonProteinId];
+                    lock (datasheet)
+                    {
+                        //SortedSet<String> orthologSet;
+                        //if (!dictionary.TryGetValue(referenceGeneId, out orthologSet))
+                        //{
+                        //    orthologSet = new SortedSet<String>();
+                        //    dictionary.Add(referenceGeneId, orthologSet);
+                        //}
+                        //orthologSet.Add(comparisonProteinId);
+                        datasheet.AddDataForKey(referenceGeneId, comparisonProteinId);
+                    }
+                }
+                //orthologGroup.GeneOrthologDatabase.
+            });
+
+            return datasheet;
         }
     }
 }
