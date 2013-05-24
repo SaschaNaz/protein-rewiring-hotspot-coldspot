@@ -11,6 +11,14 @@ using Windows.UI.Xaml;
 
 namespace Life302
 {
+    /*거 read는 진짜 데이터파일에서 데이터 읽어오는 거만 하고 다른 건 다 make로 바꾸죠
+     * save는 이제 다 없애도 되겠고
+     * 는 Rvalue/RvalueSpread 어쩌지, 일단 그냥 따로 저장, 왠지 저 구조 재활용 안 할 것 같다
+     * 새로운 문제: Datasheet로 저장해버리면 읽을 때 다시 파싱해야 되잖아 멍청아
+     * 어차피 뭐 지금도 뭐 딱히 데이터구조 제대로 된 게 있나(...
+     */
+    
+
     public class DataManager : DependencyObject
     {
         SortedDictionary<String, SortedSet<String>> storedDrosophilaNetwork;
@@ -76,9 +84,9 @@ namespace Life302
         public static readonly DependencyProperty RValueStoredProperty
             = DependencyProperty.Register("IsRValueStored", typeof(Boolean), typeof(DataManager), new PropertyMetadata(false));
 
-        public async Task<DataSheet> makeHotColdSpecifiedNetworks()
+        public async Task<Datasheet<String>> makeHotColdSpecifiedNetworks()
         {
-            var datasheet = new DataSheet("Protein Name", "Rewiring Type", "Protein Interactions");
+            var datasheet = new Datasheet<String>();//new Datasheet("Protein Name", "Rewiring Type", "Protein Interactions");
             
             var humanNetwork = await readHumanNetwork();
             //var drosophilaNetwork = await readDrosophilaNetwork();
@@ -89,13 +97,21 @@ namespace Life302
             foreach (KeyValuePair<String, SortedSet<String>> pair in humanNetwork)
             {
                 String nodot = pair.Key.Split('.')[0];
+                //var list = pair.Value.ToList();
+                //if (humanHotspot.Contains(nodot))
+                //    list.Insert(0, "Hotspot");
+                //else if (humanColdspot.Contains(nodot))
+                //    list.Insert(0, "Coldspot");
+                //else
+                //    list.Insert(0, "Unknown");
+                //list.Insert(0, "pp");
+                //Datasheet.AddDataForKey(pair.Key, list.ToArray());
                 if (humanHotspot.Contains(nodot))
-                    datasheet.AddDataForKey(nodot, "Hotspot");
+                    datasheet.AddDataForKey(pair.Key, "Hotspot");
                 else if (humanColdspot.Contains(nodot))
-                    datasheet.AddDataForKey(nodot, "Coldspot");
+                    datasheet.AddDataForKey(pair.Key, "Coldspot");
                 else
-                    datasheet.AddDataForKey(nodot, "Unknown");
-                datasheet.AddDataForKey(nodot, pair.Value.ToArray());
+                    datasheet.AddDataForKey(pair.Key, "Unknown");
             }
             return datasheet;
         }
@@ -247,9 +263,7 @@ namespace Life302
                             if (human.ContainsKey(tocheck))
                                 checkedOrthologs.Add(tocheck);
                         if (checkedOrthologs.Count == 1)
-                        {
                             orthologsFilteredDrosophilaHuman.Add(drosophilaGene, checkedOrthologs.First());
-                        }
                         else if (checkedOrthologs.Count > 1)
                             orthologsAmbiguous.Add(drosophilaGene, checkedOrthologs);
                     }

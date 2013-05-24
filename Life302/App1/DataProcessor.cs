@@ -55,8 +55,7 @@ namespace Life302
 
         public async static Task<SortedDictionary<String, SortedSet<String>>> readDrosophilaNetwork(params StorageFile[] files)
         {
-            var dictionary = new Dictionary<String, SortedSet<String>>();
-            var autolister = new AutoLister<String, String>(dictionary);
+            var autolister = new AutoLister<String, String>();
             foreach (StorageFile file in files)
             {
                 IList<String> str = await FileIO.ReadLinesAsync(file);

@@ -37,6 +37,7 @@ namespace Life302
     public sealed partial class MainPage : Page
     {
         public DataManager manager = new DataManager();
+        public BioDataProcessor processor = new BioDataProcessor();
 
         public MainPage()
         {
@@ -49,14 +50,90 @@ namespace Life302
         {
             //await manager.readDavidResults();
             //await manager.saveRvalueDndsSpread();
-            var datasheet = await manager.makeHotColdSpecifiedNetworks();
+
+            //var datasheet = await processor.ReadUniprotMapperAsync();
+            //FileSavePicker picker = new FileSavePicker();
+            //picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            //picker.FileTypeChoices.Add("datasheet text", new List<String> { ".txt" });
+            //StorageFile savefile = await picker.PickSaveFileAsync();
+            //if (savefile != null)
+            //{
+            //    await datasheet.SaveToFileAsync(savefile, true);
+            //    await new MessageDialog("Completed").ShowAsync();
+            //}
+            //else
+            //{
+            //    await new MessageDialog("Canceled").ShowAsync();
+            //}
+            //await TxtFileSave(async delegate(StorageFile savefile)
+            //{
+            //    var datasheet = await processor.GetRvalueForDrosophilaSpecific();
+            //    await datasheet.SaveToFileAsync(savefile, true);
+            //}, "RvalueForDrosophilaSpecific");
+            //await TxtFileSave(async delegate(StorageFile savefile)
+            //{
+            //    var datasheet = await processor.GetRvalueForHumanSpecific();
+            //    await datasheet.SaveToFileAsync(savefile, true);
+            //}, "RvalueForHumanSpecific");
+            //await TxtFileSave(async delegate(StorageFile savefile)
+            //{
+            //    var datasheet = await processor.GetRvalueForOrthologsByDrosophilaId();
+            //    await datasheet.SaveToFileAsync(savefile, true);
+            //}, "RvalueForOrthologsByDrosophilaId");
+            //await TxtFileSave(async delegate(StorageFile savefile)
+            //{
+            //    var datasheet = await processor.GetRvalueForOrthologsByHumanId();
+            //    await datasheet.SaveToFileAsync(savefile, true);
+            //}, "RvalueForOrthologsByHumanId");
+            //await manager.saveDrosophilaToHumanOrtholog();
+            
+            //StorageFolder folder = await Package.Current.InstalledLocation.GetFolderAsync("DroID");
+            //var files = await folder.GetFilesAsync();
+            //await BioDataReader.readDrosophilaNetworkAsync(files.ToArray());
+
+            //StorageFolder folder = await Package.Current.InstalledLocation.GetFolderAsync("HPRD");
+            //StorageFile file = (await folder.GetFilesAsync())[0];
+            //await BioDataReader.readHumanNetworkAsync(false, file);
+
+            //StorageFolder folder = await Package.Current.InstalledLocation.GetFolderAsync("InParanoid");
+            //StorageFile file = (await folder.GetFilesAsync())[0];
+            //var abc = await BioDataReader.readOrtholog(file, "Drosophila melanogaster", "Homo Sapiens");
+
+            //StorageFolder mapperfolder = await Package.Current.InstalledLocation.GetFolderAsync("Mapper");
+            //StorageFile mapperfile = await mapperfolder.GetFileAsync("HUMAN_9606_idmapping.txt");
+            //await BioDataReader.readUniprotMapperAsync(mapperfile, "RefSeq", "Ensembl_PRO", false);
+
+            //await processor.readDrosophilaToHumanOrthologAsync();
+
+            //await processor.GetMappedOrthologAsync();
+
+            //await processor.GetValidOrthologAsync();
+            //var a = await manager.readValidOrtholog();
+
+            //await manager.readRValue();
+            //await processor.MakeRValueAsync();
+            await TxtFileSave(async delegate(StorageFile savefile)
+            {
+                var datasheet = await processor.ReadHumanNetworkAsync();
+                await datasheet.SaveToFileAsync(savefile, true);
+            }, "");
+        }
+
+        public async Task TxtFileSave(Action<StorageFile> action, String filename)
+        {
+            await basicFileSave(action, filename, "Basic text format", ".txt");
+        }
+
+        async Task basicFileSave(Action<StorageFile> action, String filename, String filetypeExplanation, String filetype)
+        {
             FileSavePicker picker = new FileSavePicker();
             picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            picker.FileTypeChoices.Add("datasheet text", new List<String> { ".txt" });
+            picker.FileTypeChoices.Add(filetypeExplanation, new List<String> { filetype });
+            picker.SuggestedFileName = filename;
             StorageFile savefile = await picker.PickSaveFileAsync();
             if (savefile != null)
             {
-                await datasheet.SaveToFile(savefile, true);
+                action(savefile);
                 await new MessageDialog("Completed").ShowAsync();
             }
             else
