@@ -9,30 +9,51 @@ using Windows.Storage.Streams;
 
 namespace Life302
 {
+    public enum DatasheetAdjustment
+    {
+        Sort, SortAndFilterDuplication
+    }
+
     public interface IDatasheet
     {
         Int32 KeyCount { get; }
         Int32 DataItemCount { get; }
+
         void AddDataForKey(Object key, params Object[] items);
-        void InsertDataForKey(Object key, Int32 index, params Object[] items);
+        void InsertDataAttributeForKey(Int32 index, Object key, Object item);
         Boolean ContainsKey(Object key);
-        List<Object> GetDataForKey(Object key);
-        Boolean TryGetDataForKey(Object key, out List<Object> data);
+        List<DataT> GetDataForKey<DataT>(Object key);
+        Boolean TryGetDataForKey<DataT>(Object key, out List<DataT> data);
+
         DataT GetSingleDataForKey<DataT>(Int32 index, Object key);
-        Boolean TryGetSingleDataForKey<DataT>(Object key, out DataT data);
-        Task SaveToFileAsync(StorageFile file, Boolean toSort);
+        Boolean TryGetSingleDataForKey<DataT>(Int32 index, Object key, out DataT data);
+        DataT GetFirstDataForKey<DataT>(Object key);
+        Boolean TryGetFirstDataForKey<DataT>(Object key, out DataT data);
+
+        DataT GetDataAttributeForKey<DataT>(Int32 index, Object key);
+        Boolean TryGetDataAttributeForKey<DataT>(Int32 index, Object key, out DataT data);
+
+        Task SaveToFileAsync(StorageFile file);
+        void AdjustData(DatasheetAdjustment adjust);
     }
 
     public interface IDatasheet<T> : IDatasheet
     {
         Dictionary<T, List<Object>>.KeyCollection GetKeys();
+
         void AddDataForKey(T key, params Object[] items);
-        void InsertDataForKey(T key, Int32 index, params Object[] items);
+        void InsertDataAttributeForKey(Int32 index, T key, Object item);
         Boolean ContainsKey(T key);
-        List<Object> GetDataForKey(T key);
-        Boolean TryGetDataForKey(T key, out List<Object> data);
+        List<DataT> GetDataForKey<DataT>(T key);
+        Boolean TryGetDataForKey<DataT>(T key, out List<DataT> data);
+
         DataT GetSingleDataForKey<DataT>(Int32 index, T key);
-        Boolean TryGetSingleDataForKey<DataT>(T key, out DataT data);
+        Boolean TryGetSingleDataForKey<DataT>(Int32 index, T key, out DataT data);
+        DataT GetFirstDataForKey<DataT>(T key);
+        Boolean TryGetFirstDataForKey<DataT>(T key, out DataT data);
+
+        DataT GetDataAttributeForKey<DataT>(Int32 index, T key);
+        Boolean TryGetDataAttributeForKey<DataT>(Int32 index, T key, out DataT data);
     }
     
     public class Datasheet<T> : IDatasheet<T>, IEnumerable
@@ -40,7 +61,7 @@ namespace Life302
         public List<String> ColumnNames = new List<String>();
 
         Dictionary<T, List<Object>> DataLines = new Dictionary<T, List<Object>>();
-        List<IDictionary> dictionary = new List<IDictionary>();
+        List<IDictionary> DataAttributeColumns = new List<IDictionary>();
 
         public Int32 DataItemCount { get; private set; }
         public Int32 KeyCount { get { return DataLines.Count; } }
@@ -82,26 +103,19 @@ namespace Life302
             this.AddDataForKey((T)key, items);
         }
 
-        public void InsertDataForKey(T key, Int32 index, params Object[] items)
+        public void InsertDataAttributeForKey(Int32 index, T key, Object item)
         {
-            List<Object> list;
-            if (!DataLines.TryGetValue(key, out list))
-            {
-                list = new List<Object>();
-                DataLines.Add(key, list);
-            }
+            while (DataAttributeColumns.Count <= index)
+                DataAttributeColumns.Add(new Dictionary<T, Object>());
 
-            //if (items.Length + list.Count > ColumnNames.Count)
-            //    throw new Exception("You can't add more items with this key. Item count cannot be larger than the column count.");
-            //else
-            list.InsertRange(index, items);
-            DataItemCount += items.Length;
+            DataAttributeColumns[index][key] = item;
+            DataItemCount += 1;
         }
 
-        void IDatasheet.InsertDataForKey(Object key, Int32 index, params Object[] items)
+        void IDatasheet.InsertDataAttributeForKey(Int32 index, Object key, Object data)
         {
             if (!(key is T)) throw new ArgumentException("key");
-            this.InsertDataForKey((T)key, index, items);
+            this.InsertDataAttributeForKey(index, (T)key, data);
         }
 
         public Boolean ContainsKey(T key)
@@ -115,21 +129,21 @@ namespace Life302
             return this.ContainsKey((T)key);
         }
 
-        public List<Object> GetDataForKey(T key)
+        public List<DataT> GetDataForKey<DataT>(T key)
         {
             List<Object> list;
             if (!DataLines.TryGetValue(key, out list))
                 return null;
-            else return list;
+            else return list.Cast<DataT>().ToList();
         }
 
-        List<Object> IDatasheet.GetDataForKey(Object key)
+        List<DataT> IDatasheet.GetDataForKey<DataT>(Object key)
         {
             if (!(key is T)) throw new ArgumentException("key");
-            return this.GetDataForKey((T)key);
+            return this.GetDataForKey<DataT>((T)key);
         }
 
-        public Boolean TryGetDataForKey(T key, out List<Object> data)
+        public Boolean TryGetDataForKey<DataT>(T key, out List<DataT> data)
         {
             List<Object> list;
             if (!DataLines.TryGetValue(key, out list))
@@ -139,12 +153,12 @@ namespace Life302
             }
             else
             {
-                data = list;
+                data = list.Cast<DataT>().ToList();
                 return true;
             }
         }
 
-        Boolean IDatasheet.TryGetDataForKey(Object key, out List<Object> data)
+        Boolean IDatasheet.TryGetDataForKey<DataT>(Object key, out List<DataT> data)
         {
             if (!(key is T)) throw new ArgumentException("key");
             return this.TryGetDataForKey((T)key, out data);
@@ -164,9 +178,15 @@ namespace Life302
             return this.GetSingleDataForKey<T2>(index, (T)key);
         }
 
-        public T2 GetSingleDataForKey<T2>(T key)
+        public T2 GetFirstDataForKey<T2>(T key)
         {
             return GetSingleDataForKey<T2>(0, key);
+        }
+
+        T2 IDatasheet.GetFirstDataForKey<T2>(Object key)
+        {
+            if (!(key is T)) throw new ArgumentException("key");
+            return this.GetFirstDataForKey<T2>((T)key);
         }
 
         public Boolean TryGetSingleDataForKey<T2>(Int32 index, T key, out T2 data)
@@ -184,15 +204,56 @@ namespace Life302
             }
         }
 
-        public Boolean TryGetSingleDataForKey<T2>(T key, out T2 data)
+        Boolean IDatasheet.TryGetSingleDataForKey<T2>(Int32 index, Object key, out T2 data)
+        {
+            if (!(key is T)) throw new ArgumentException("key");
+            return this.TryGetSingleDataForKey<T2>(index, (T)key, out data);
+        }
+
+        public Boolean TryGetFirstDataForKey<T2>(T key, out T2 data)
         {
             return TryGetSingleDataForKey<T2>(0, key, out data);
         }
 
-        Boolean IDatasheet.TryGetSingleDataForKey<T2>(Object key, out T2 data)
+        Boolean IDatasheet.TryGetFirstDataForKey<T2>(Object key, out T2 data)
         {
             if (!(key is T)) throw new ArgumentException("key");
-            return this.TryGetSingleDataForKey((T)key, out data);
+            return this.TryGetFirstDataForKey((T)key, out data);
+        }
+
+        public T2 GetDataAttributeForKey<T2>(Int32 index, T key)
+        {
+            Object data;
+            if (DataAttributeColumns.Count <= index || !(DataAttributeColumns[index] as Dictionary<T, Object>).TryGetValue(key, out data))
+                return default(T2);
+            else return (T2)data;
+        }
+
+        T2 IDatasheet.GetDataAttributeForKey<T2>(Int32 index, Object key)
+        {
+            if (!(key is T)) throw new ArgumentException("key");
+            return this.GetDataAttributeForKey<T2>(index, (T)key);
+        }
+
+        public Boolean TryGetDataAttributeForKey<T2>(Int32 index, T key, out T2 data)
+        {
+            Object odata;
+            if (DataAttributeColumns.Count <= index || !(DataAttributeColumns[index] as Dictionary<T, Object>).TryGetValue(key, out odata))
+            {
+                data = default(T2);
+                return false;
+            }
+            else
+            {
+                data = (T2)odata;
+                return true;
+            }
+        }
+
+        Boolean IDatasheet.TryGetDataAttributeForKey<T2>(Int32 index, Object key, out T2 data)
+        {
+            if (!(key is T)) throw new ArgumentException("key");
+            return this.TryGetDataAttributeForKey(index, (T)key, out data);
         }
 
         public Boolean RemoveData(T key)
@@ -200,8 +261,11 @@ namespace Life302
             return DataLines.Remove(key);
         }
 
-        public async Task SaveToFileAsync(StorageFile file, Boolean toSort)
+        public async Task SaveToFileAsync(StorageFile file)
         {
+            SortedSet<T> keys = new SortedSet<T>(DataLines.Keys);
+            foreach (Dictionary<T, Object> column in DataAttributeColumns)
+                keys.UnionWith(column.Keys);
             using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
             {
                 using (var writer = new DataWriter(stream))
@@ -211,24 +275,55 @@ namespace Life302
                         writer.WriteString(String.Join("\t", ColumnNames));
                         writer.WriteString("\n");
                     }
-                    IDictionary<T, List<Object>> dictionary;
-                    if (toSort)
-                        dictionary = new SortedDictionary<T, List<Object>>(DataLines);
-                    else
-                        dictionary = DataLines;
-                    foreach (KeyValuePair<T, List<Object>> line in dictionary)
+
+                    foreach (T key in keys)
                     {
-                        writer.WriteString(line.Key.ToString());
-                        writer.WriteString("\t");
-                        foreach (Object o in line.Value)
+                        writer.WriteString(key.ToString());
+                        foreach (Dictionary<T, Object> column in DataAttributeColumns)
                         {
-                            writer.WriteString(o.ToString());
                             writer.WriteString("\t");
+                            Object dataInColumn;
+                            if (column.TryGetValue(key, out dataInColumn))
+                                writer.WriteString(((T)dataInColumn).ToString());
+                        }
+                        List<Object> line;
+                        if (DataLines.TryGetValue(key, out line))
+                        {
+                            foreach (Object o in line)
+                            {
+                                writer.WriteString("\t");
+                                writer.WriteString(o.ToString());
+                            }
                         }
                         writer.WriteString("\n");
                     }
                     await writer.StoreAsync();
                 }
+            }
+        }
+
+        public void AdjustData(DatasheetAdjustment adjust)
+        {
+            switch (adjust)
+            {
+                case DatasheetAdjustment.Sort:
+                    {
+                        foreach (List<Object> list in DataLines.Values)
+                            list.Sort();
+                        break;
+                    }
+                case DatasheetAdjustment.SortAndFilterDuplication:
+                    {
+                        Object[] temp;
+                        foreach (List<Object> list in DataLines.Values)
+                        {
+                            list.Sort();
+                            temp = list.Distinct().ToArray();
+                            list.Clear();
+                            list.AddRange(temp);
+                        }
+                        break;
+                    }
             }
         }
     }

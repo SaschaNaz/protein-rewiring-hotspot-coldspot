@@ -229,22 +229,18 @@ namespace Life302
                 foreach (KeyValuePair<String, List<Object>> drosophilaPpi in drosophila)
                 {
                     String humanOrtholog;
-                    if (orthologsFilteredDrosophilaHuman.TryGetSingleDataForKey(drosophilaPpi.Key, out humanOrtholog))
+                    if (orthologsFilteredDrosophilaHuman.TryGetFirstDataForKey(drosophilaPpi.Key, out humanOrtholog))
                     {
                         SortedSet<String> drosophilaInteractionsOrthologMapped = new SortedSet<String>();
-                        List<String> humanInteractions = human.GetDataForKey(humanOrtholog).Cast<String>().ToList();
+                        List<String> humanInteractions = human.GetDataForKey<String>(humanOrtholog);
                         humanRemainingGenes.Remove(humanOrtholog);
                         foreach (String ppi in drosophilaPpi.Value)
                         {
                             String mappedInteraction;
-                            if (orthologsFilteredDrosophilaHuman.TryGetSingleDataForKey(ppi, out mappedInteraction))
+                            if (orthologsFilteredDrosophilaHuman.TryGetFirstDataForKey(ppi, out mappedInteraction))
                                 drosophilaInteractionsOrthologMapped.Add(mappedInteraction);
                         }
                         drosophilaInteractionsOrthologMapped.IntersectWith(humanInteractions);
-                        if (drosophilaInteractionsOrthologMapped.Count > 0)
-                        {
-
-                        }
 
                         orthologsRValueList.AddDataForKey(
                             (UInt16)(drosophilaPpi.Value.Count + humanInteractions.Count - drosophilaInteractionsOrthologMapped.Count * 2), drosophilaPpi.Key);
@@ -255,9 +251,13 @@ namespace Life302
                         drosophilaSpecificRValueList.AddDataForKey((UInt16)drosophilaPpi.Value.Count, drosophilaPpi.Key);
                 }
                 foreach (String humanRemainingGene in humanRemainingGenes)
-                    humanSpecificRValueList.AddDataForKey((UInt16)human.GetDataForKey(humanRemainingGene).Count, humanRemainingGene);
+                    humanSpecificRValueList.AddDataForKey((UInt16)human.GetDataForKey<String>(humanRemainingGene).Count, humanRemainingGene);
                 #endregion
 
+                drosophilaSpecificRValueList.AdjustData(DatasheetAdjustment.Sort);
+                humanSpecificRValueList.AdjustData(DatasheetAdjustment.Sort);
+                orthologsRValueList.AdjustData(DatasheetAdjustment.Sort);
+                orthologsRValueListHuman.AdjustData(DatasheetAdjustment.Sort);
                 RememberDatasheet(BioDataType.RvalueForDrosophilaSpecific, drosophilaSpecificRValueList);
                 RememberDatasheet(BioDataType.RvalueForHumanSpecific, humanSpecificRValueList);
                 RememberDatasheet(BioDataType.RvalueForOrthologsByDrosophilaId, orthologsRValueList);
