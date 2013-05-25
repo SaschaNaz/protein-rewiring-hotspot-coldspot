@@ -27,6 +27,7 @@ namespace Life302
                 }
             }
 
+            datasheet.AdjustData(DatasheetAdjustment.SortAndFilterDuplication);
             return datasheet;
         }
 
@@ -52,6 +53,7 @@ namespace Life302
                 }
             }
 
+            datasheet.AdjustData(DatasheetAdjustment.SortAndFilterDuplication);
             return datasheet;
         }
 
@@ -61,7 +63,9 @@ namespace Life302
 
             var orthologReader = new OrthoXml.InParanoidReader(xdoc);
 
-            return orthologReader.MapGeneToGeneSeedOrthologAsync(referenceSpeciesName, comparisonSpeciesName);
+            var datasheet = orthologReader.MapGeneToGeneSeedOrthologAsync(referenceSpeciesName, comparisonSpeciesName);
+            datasheet.AdjustData(DatasheetAdjustment.SortAndFilterDuplication);
+            return datasheet;
             //InParalog는 나중에 처리하고 일단 이건 보여주기용?
         }
 
@@ -136,6 +140,7 @@ namespace Life302
                 }
             }
 
+            datasheet.AdjustData(DatasheetAdjustment.SortAndFilterDuplication);
             return datasheet;
         }
     }

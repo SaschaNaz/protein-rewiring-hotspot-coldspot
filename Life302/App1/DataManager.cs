@@ -107,11 +107,11 @@ namespace Life302
                 //list.Insert(0, "pp");
                 //Datasheet.AddDataForKey(pair.Key, list.ToArray());
                 if (humanHotspot.Contains(nodot))
-                    datasheet.AddDataForKey(pair.Key, "Hotspot");
+                    datasheet.InsertDataAttributeForKey(0, pair.Key, "Hotspot");
                 else if (humanColdspot.Contains(nodot))
-                    datasheet.AddDataForKey(pair.Key, "Coldspot");
+                    datasheet.InsertDataAttributeForKey(0, pair.Key, "Coldspot");
                 else
-                    datasheet.AddDataForKey(pair.Key, "Unknown");
+                    datasheet.InsertDataAttributeForKey(0, pair.Key, "Unknown");
             }
             return datasheet;
         }

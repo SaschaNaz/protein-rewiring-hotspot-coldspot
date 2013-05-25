@@ -114,8 +114,8 @@ namespace Life302
             //await processor.MakeRValueAsync();
             await TxtFileSave(async delegate(StorageFile savefile)
             {
-                var datasheet = await processor.ReadHumanNetworkAsync();
-                await datasheet.SaveToFileAsync(savefile, true);
+                var datasheet = await processor.GetRvalueForDrosophilaSpecific();//await manager.makeHotColdSpecifiedNetworks();//
+                await datasheet.SaveToFileAsync(savefile);
             }, "");
         }
 
