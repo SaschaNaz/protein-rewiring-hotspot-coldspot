@@ -214,11 +214,22 @@ namespace Life302
                 orthologHotspotPvalues = await DataProcessor.readDavidProteinAnnotationResult(await childfolder.GetFileAsync("bp.txt"));
             }
 
+            System.Diagnostics.Debug.WriteLine("Coldspot");
             foreach (KeyValuePair<String, Double> pair in nonorthologColdspotPvalues)
             {
                 Double value;
                 if (orthologColdspotPvalues.TryGetValue(pair.Key, out value) && Math.Abs(Math.Log(pair.Value) - Math.Log(value)) < Math.Abs(Math.Log(Math.Min(pair.Value, value))) * 0.4)
                 {
+                    System.Diagnostics.Debug.WriteLine(String.Format("{0} {1} {2}", pair.Value, value, pair.Key));
+                }
+            }
+            System.Diagnostics.Debug.WriteLine("Hotspot");
+            foreach (KeyValuePair<String, Double> pair in nonorthologHotspotPvalues)
+            {
+                Double value;
+                if (orthologHotspotPvalues.TryGetValue(pair.Key, out value) && Math.Abs(Math.Log(pair.Value) - Math.Log(value)) < Math.Abs(Math.Log(Math.Min(pair.Value, value))) * 0.4)
+                {
+                    System.Diagnostics.Debug.WriteLine(String.Format("{0} {1} {2}", pair.Value, value, pair.Key));
                 }
             }
         }

@@ -22,7 +22,11 @@ namespace Life302
         RvalueForOrthologsByDrosophilaId,
         RvalueForOrthologsByHumanId,
         RvalueForDrosophilaSpecific,
-        RvalueForHumanSpecific
+        RvalueForHumanSpecific,
+        RewiringClassificationDrosophila,
+        RewiringClassificationHuman,
+        RewiringClassifiedMeanBetweennessDrosophila,
+        RewiringClassifiedMeanBetweennessHuman
     }
 
     delegate void DatasheetAddedEventHandler(object sender, DatasheetAddedEventArgs e);
@@ -266,7 +270,7 @@ namespace Life302
             //이러고, 4개 각 데이터시트 불러오는 함수 만들어서 데이터시트베이스에서 찾고 없으면 이 함수 부르기, 어차피 하나 없으면 다 없는거임 ㅇㅇ
         }
 
-        public async Task<Datasheet<UInt16>> GetRvalueForDrosophilaSpecific()
+        public async Task<Datasheet<UInt16>> GetRvalueForDrosophilaSpecificAsync()
         {
             BioDataType datatype = BioDataType.RvalueForDrosophilaSpecific;
             if (!DatasheetBase.ContainsKey(datatype))
@@ -274,7 +278,7 @@ namespace Life302
             return DatasheetBase[datatype] as Datasheet<UInt16>;
         }
 
-        public async Task<Datasheet<UInt16>> GetRvalueForHumanSpecific()
+        public async Task<Datasheet<UInt16>> GetRvalueForHumanSpecificAsync()
         {
             BioDataType datatype = BioDataType.RvalueForHumanSpecific;
             if (!DatasheetBase.ContainsKey(datatype))
@@ -282,7 +286,7 @@ namespace Life302
             return DatasheetBase[datatype] as Datasheet<UInt16>;
         }
 
-        public async Task<Datasheet<UInt16>> GetRvalueForOrthologsByDrosophilaId()
+        public async Task<Datasheet<UInt16>> GetRvalueForOrthologsByDrosophilaIdAsync()
         {
             BioDataType datatype = BioDataType.RvalueForOrthologsByDrosophilaId;
             if (!DatasheetBase.ContainsKey(datatype))
@@ -290,12 +294,144 @@ namespace Life302
             return DatasheetBase[datatype] as Datasheet<UInt16>;
         }
 
-        public async Task<Datasheet<UInt16>> GetRvalueForOrthologsByHumanId()
+        public async Task<Datasheet<UInt16>> GetRvalueForOrthologsByHumanIdAsync()
         {
             BioDataType datatype = BioDataType.RvalueForOrthologsByHumanId;
             if (!DatasheetBase.ContainsKey(datatype))
                 await MakeRValueAsync();
             return DatasheetBase[datatype] as Datasheet<UInt16>;
+        }
+
+        public async Task<Datasheet<String>> GetRewiringClassificationDrosophilaAsync()
+        {
+            IDatasheet datasheet;
+            BioDataType datatype = BioDataType.RewiringClassificationDrosophila;
+            if (!DatasheetBase.TryGetValue(datatype, out datasheet))
+            {
+                #region calculation
+                var mergedDrosophilaRvalue = MergeRvalue(await GetRvalueForDrosophilaSpecificAsync(), await GetRvalueForOrthologsByDrosophilaIdAsync());
+                Int32 meanRvalue = GetMeanRvalue(mergedDrosophilaRvalue);
+                var classified = new Datasheet<String>();
+                foreach (KeyValuePair<UInt16, List<Object>> pair in mergedDrosophilaRvalue)
+                    if (pair.Key <= meanRvalue)
+                        //classified.AddDataForKey("Coldspot", pair.Value.ToArray());
+                        foreach (String str in pair.Value)
+                            classified.InsertDataAttributeForKey(0, str, "Coldspot");
+                    else
+                        //classified.AddDataForKey("Hostpot", pair.Value.ToArray());
+                        foreach (String str in pair.Value)
+                            classified.InsertDataAttributeForKey(0, str, "Hotspot");
+                datasheet = classified;
+                #endregion
+                RememberDatasheet(datatype, datasheet);
+            }
+
+            return datasheet as Datasheet<String>;
+        }
+
+        public async Task<Datasheet<String>> GetRewiringClassificationHumanAsync()
+        {
+            IDatasheet datasheet;
+            BioDataType datatype = BioDataType.RewiringClassificationHuman;
+            if (!DatasheetBase.TryGetValue(datatype, out datasheet))
+            {
+                #region calculation
+                var mergedDrosophilaRvalue = MergeRvalue(await GetRvalueForHumanSpecificAsync(), await GetRvalueForOrthologsByHumanIdAsync());
+                Int32 meanRvalue = GetMeanRvalue(mergedDrosophilaRvalue);
+                var classified = new Datasheet<String>();
+                foreach (KeyValuePair<UInt16, List<Object>> pair in mergedDrosophilaRvalue)
+                    if (pair.Key <= meanRvalue)
+                        //classified.AddDataForKey("Coldspot", pair.Value.ToArray());
+                        foreach (String str in pair.Value)
+                            classified.InsertDataAttributeForKey(0, str, "Coldspot");
+                    else
+                        //classified.AddDataForKey("Hostpot", pair.Value.ToArray());
+                        foreach (String str in pair.Value)
+                            classified.InsertDataAttributeForKey(0, str, "Hotspot");
+                datasheet = classified;
+                #endregion
+                RememberDatasheet(datatype, datasheet);
+            }
+
+            return datasheet as Datasheet<String>;
+        }
+
+        Int32 GetMeanRvalue(Datasheet<UInt16> datasheet)
+        {
+            Int32 itemcount = datasheet.DataItemCount;
+            Int32 RvalueTotal = 0;
+            foreach (KeyValuePair<UInt16, List<Object>> pair in datasheet)
+            {
+                RvalueTotal += pair.Key * pair.Value.Count;
+            }
+            return RvalueTotal / itemcount;
+        }
+
+        Datasheet<UInt16> MergeRvalue(params Datasheet<UInt16>[] datasheets)
+        {
+            if (datasheets.Length > 1)
+            {
+                var basesheet = datasheets[0];
+                foreach (Datasheet<UInt16> sheet in datasheets.Skip(1))
+                    foreach (KeyValuePair<UInt16, List<Object>> pair in sheet)
+                        basesheet.AddDataForKey(pair.Key, pair.Value.ToArray());
+                return basesheet;
+            }
+            else if (datasheets.Length == 1)
+                return datasheets[0];
+            else
+                return new Datasheet<UInt16>();
+        }
+
+        public async Task<Datasheet<String>> GetDrosophilaNetworkSIFFormatAsync()
+        {
+            var datasheet = await ReadDrosophilaNetworkAsync();
+
+            foreach (String key in datasheet.GetKeys())
+                datasheet.InsertDataAttributeForKey(0, key, "pp");
+            return datasheet;
+        }
+
+        public async Task<Datasheet<String>> GetRewiringClassifiedMeanBetweennessDrosophilaAsync()
+        {
+            IDatasheet datasheet;
+            BioDataType datatype = BioDataType.RewiringClassifiedMeanBetweennessDrosophila;
+            if (!DatasheetBase.TryGetValue(datatype, out datasheet))
+            {
+                #region calculation
+                var betweenness = new BetweennessCalculator(await ReadDrosophilaNetworkAsync()).Calculate();
+                var rewiringclassification = await GetRewiringClassificationDrosophilaAsync();
+
+                foreach (String key in rewiringclassification.GetKeys())
+                    rewiringclassification.InsertDataAttributeForKey(1, key, betweenness.GetFirstDataForKey<Double>(key));
+
+                datasheet = rewiringclassification;
+                #endregion
+                RememberDatasheet(datatype, datasheet);
+            }
+
+            return datasheet as Datasheet<String>;
+        }
+
+        public async Task<Datasheet<String>> GetRewiringClassifiedMeanBetweennessHumanAsync()
+        {
+            IDatasheet datasheet;
+            BioDataType datatype = BioDataType.RewiringClassifiedMeanBetweennessHuman;
+            if (!DatasheetBase.TryGetValue(datatype, out datasheet))
+            {
+                #region calculation
+                var betweenness = new BetweennessCalculator(await ReadHumanNetworkAsync()).Calculate();
+                var rewiringclassification = await GetRewiringClassificationHumanAsync();
+
+                foreach (String key in rewiringclassification.GetKeys())
+                    rewiringclassification.InsertDataAttributeForKey(1, key, betweenness.GetFirstDataForKey<Double>(key));
+
+                datasheet = rewiringclassification;
+                #endregion
+                RememberDatasheet(datatype, datasheet);
+            }
+
+            return datasheet as Datasheet<String>;
         }
     }
 }
