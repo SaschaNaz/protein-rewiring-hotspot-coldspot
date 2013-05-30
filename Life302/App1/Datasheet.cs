@@ -39,7 +39,7 @@ namespace Life302
 
     public interface IDatasheet<T> : IDatasheet
     {
-        Dictionary<T, List<Object>>.KeyCollection GetKeys();
+        SortedSet<T> GetKeys();
 
         void AddDataForKey(T key, params Object[] items);
         void InsertDataAttributeForKey(Int32 index, T key, Object item);
@@ -76,9 +76,12 @@ namespace Life302
             return DataLines.GetEnumerator();
         }
 
-        public Dictionary<T, List<Object>>.KeyCollection GetKeys()
+        public SortedSet<T> GetKeys()
         {
-            return DataLines.Keys;
+            SortedSet<T> keys = new SortedSet<T>(DataLines.Keys);
+            foreach (Dictionary<T, Object> column in DataAttributeColumns)
+                keys.UnionWith(column.Keys);
+            return keys;
         }
 
         public void AddDataForKey(T key, params Object[] items)
@@ -284,7 +287,7 @@ namespace Life302
                             writer.WriteString("\t");
                             Object dataInColumn;
                             if (column.TryGetValue(key, out dataInColumn))
-                                writer.WriteString(((T)dataInColumn).ToString());
+                                writer.WriteString(dataInColumn.ToString());
                         }
                         List<Object> line;
                         if (DataLines.TryGetValue(key, out line))

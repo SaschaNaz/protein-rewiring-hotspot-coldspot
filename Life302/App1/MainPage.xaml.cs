@@ -112,11 +112,17 @@ namespace Life302
 
             //await manager.readRValue();
             //await processor.MakeRValueAsync();
-            await TxtFileSave(async delegate(StorageFile savefile)
-            {
-                var datasheet = await processor.GetRvalueForDrosophilaSpecific();//await manager.makeHotColdSpecifiedNetworks();//
-                await datasheet.SaveToFileAsync(savefile);
-            }, "");
+            //await TxtFileSave(async delegate(StorageFile savefile)
+            //{
+            //    var datasheet = await processor.GetRewiringClassificationDrosophilaAsync();//await manager.makeHotColdSpecifiedNetworks();//
+            //    await datasheet.SaveToFileAsync(savefile);
+            //}, "");
+            //await TxtFileSave(async delegate(StorageFile savefile)
+            //{
+            //    var datasheet = await processor.GetRewiringClassifiedMeanBetweennessHumanAsync();
+            //    await datasheet.SaveToFileAsync(savefile);
+            //}, "");
+            await manager.readDavidResults();
         }
 
         public async Task TxtFileSave(Action<StorageFile> action, String filename)
